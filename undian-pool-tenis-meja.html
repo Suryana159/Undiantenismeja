@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Undian Pool — Tenis Meja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --court-green:#0B4F3F;
+  --court-green-2:#146B52;
+  --court-deep:#062E24;
+  --orange:#FF7A29;
+  --orange-2:#FF9552;
+  --cream:#F5F1E8;
+  --ink:#12201C;
+  --gold:#E8B94D;
+  --danger:#E24C4C;
+  --line:rgba(245,241,232,.14);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(20,107,82,.5), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255,122,41,.12), transparent 55%),
+    var(--court-deep);
+  color:var(--cream);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  background-attachment:fixed;
+}
+.table-lines{
+  position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.05;
+  background-image:
+    linear-gradient(var(--cream) 2px, transparent 2px),
+    linear-gradient(90deg, var(--cream) 2px, transparent 2px);
+  background-size:64px 64px;
+}
+#app{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:22px 20px 60px;}
+
+/* ---------- HEADER ---------- */
+header.top{
+  display:flex; align-items:center; gap:18px;
+  padding:18px 22px;
+  background:linear-gradient(135deg, rgba(20,107,82,.55), rgba(6,46,36,.55));
+  border:1px solid var(--line);
+  border-radius:16px;
+  margin-bottom:20px;
+  backdrop-filter:blur(6px);
+}
+#eventLogo{
+  width:60px; height:60px; border-radius:12px; object-fit:cover;
+  background:rgba(245,241,232,.08); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line);
+}
+#eventLogo img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+.brand-text{flex:1; min-width:0;}
+.eyebrow{
+  font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--orange-2); margin:0 0 4px;
+}
+h1.event-name{
+  font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:.03em;
+  margin:0; line-height:1; color:var(--cream);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.event-name.placeholder{color:rgba(245,241,232,.4); font-family:'Inter',sans-serif; font-size:18px; font-weight:600;}
+
+nav.tabs{display:flex; gap:6px; flex-shrink:0;}
+.tab-btn{
+  font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:.05em;
+  padding:10px 20px; background:transparent; border:1px solid var(--line);
+  color:var(--cream); border-radius:10px; cursor:pointer; opacity:.65;
+  transition:.15s;
+}
+.tab-btn:hover{opacity:1;}
+.tab-btn.active{background:var(--orange); border-color:var(--orange); color:var(--court-deep); opacity:1;}
+
+.panel{display:none;}
+.panel.active{display:block; animation:fadeUp .35s ease;}
+@keyframes fadeUp{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+/* ---------- CARDS ---------- */
+.card{
+  background:rgba(245,241,232,.05);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:22px;
+  margin-bottom:18px;
+}
+.card h2{
+  font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:.03em;
+  margin:0 0 14px; color:var(--orange-2); display:flex; align-items:center; gap:8px;
+}
+.card h2 .num{
+  font-family:'Space Mono',monospace; font-size:12px; background:var(--court-green);
+  padding:2px 8px; border-radius:20px; color:var(--gold);
+}
+.field-row{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;}
+.field{flex:1; min-width:160px;}
+.field label{display:block; font-size:12px; color:rgba(245,241,232,.65); margin-bottom:6px; font-weight:600;}
+input[type=text], input[type=password], select, textarea{
+  width:100%; padding:11px 13px; border-radius:9px; border:1px solid var(--line);
+  background:rgba(6,46,36,.55); color:var(--cream); font-family:'Inter',sans-serif; font-size:14px;
+  outline:none; transition:.15s;
+}
+textarea{resize:vertical; min-height:80px; font-family:'Space Mono',monospace; font-size:13px;}
+input:focus, select:focus, textarea:focus{border-color:var(--orange); background:rgba(6,46,36,.85);}
+input::placeholder{color:rgba(245,241,232,.35);}
+
+button{cursor:pointer; font-family:'Inter',sans-serif; border:none;}
+.btn{
+  padding:11px 20px; border-radius:9px; font-weight:700; font-size:14px;
+  background:var(--orange); color:var(--court-deep); transition:.15s;
+}
+.btn:hover{background:var(--orange-2); transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn.secondary{background:transparent; border:1px solid var(--line); color:var(--cream);}
+.btn.secondary:hover{border-color:var(--orange); color:var(--orange-2); background:transparent;}
+.btn.danger{background:var(--danger); color:#fff;}
+.btn.danger:hover{background:#c93c3c;}
+.btn.small{padding:6px 12px; font-size:12px; border-radius:7px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+
+/* ---------- TABLE ---------- */
+table.roster{width:100%; border-collapse:collapse; font-size:14px;}
+table.roster th{
+  text-align:left; padding:9px 10px; font-size:11px; letter-spacing:.06em;
+  text-transform:uppercase; color:rgba(245,241,232,.55); border-bottom:1px solid var(--line);
+}
+table.roster td{padding:9px 10px; border-bottom:1px solid rgba(245,241,232,.06); vertical-align:middle;}
+table.roster tr:hover td{background:rgba(245,241,232,.03);}
+.pool-tag{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px; border-radius:7px; font-family:'Bebas Neue'; font-size:15px;
+  background:var(--court-green); color:var(--gold); border:1px solid var(--line);
+}
+.empty-note{color:rgba(245,241,232,.4); font-size:13px; padding:14px 4px; text-align:center;}
+
+/* ---------- POOL STANDINGS GRID ---------- */
+.pool-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;}
+@media(max-width:820px){.pool-grid{grid-template-columns:repeat(2, 1fr);}}
+.pool-card{
+  background:linear-gradient(160deg, rgba(20,107,82,.4), rgba(6,46,36,.6));
+  border:1px solid var(--line); border-radius:12px; padding:14px;
+  min-height:120px;
+}
+.pool-card.highlight{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold), 0 0 22px rgba(232,185,77,.25);}
+.pool-card .ph{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+.pool-card .pletter{font-family:'Bebas Neue'; font-size:26px; color:var(--orange-2);}
+.pool-card .pcount{font-family:'Space Mono'; font-size:11px; color:rgba(245,241,232,.55);}
+.pool-card ul{list-style:none; margin:0; padding:0; font-size:13px;}
+.pool-card li{padding:3px 0; border-bottom:1px dashed rgba(245,241,232,.08); color:rgba(245,241,232,.85);}
+.pool-card li:last-child{border-bottom:none;}
+.pool-card .pempty{color:rgba(245,241,232,.3); font-size:12px; font-style:italic;}
+
+/* ---------- PESERTA / DRAW ---------- */
+.draw-wrap{text-align:center; padding:10px 0 4px;}
+.draw-wrap .field{max-width:380px; margin:0 auto 16px;}
+.stage{
+  display:flex; flex-direction:column; align-items:center; gap:16px; padding:20px 0;
+}
+.flap-stage{position:relative;}
+.flap-card{
+  width:150px; height:180px; border-radius:14px;
+  background:linear-gradient(160deg, var(--court-green-2), var(--court-deep));
+  border:1px solid rgba(245,241,232,.2);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+  box-shadow:0 14px 30px rgba(0,0,0,.4);
+}
+.flap-card::after{
+  content:''; position:absolute; left:0; right:0; top:50%; height:3px;
+  background:rgba(6,46,36,.7); transform:translateY(-50%); z-index:2;
+}
+.flap-card::before{
+  content:''; position:absolute; inset:0; z-index:1;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), transparent 40%);
+}
+#flapLetter{
+  font-family:'Bebas Neue',sans-serif; font-size:96px; color:var(--cream); position:relative; z-index:0;
+  transform-origin:center;
+}
+.flap-out{animation:flapOut .09s linear forwards;}
+.flap-in{animation:flapIn .09s linear forwards;}
+@keyframes flapOut{from{transform:scaleY(1);} to{transform:scaleY(.04);}}
+@keyframes flapIn{from{transform:scaleY(.04);} to{transform:scaleY(1);}}
+.flap-land{animation:landPulse .6s ease;}
+@keyframes landPulse{0%{box-shadow:0 14px 30px rgba(0,0,0,.4);} 35%{box-shadow:0 0 0 5px var(--gold), 0 0 40px rgba(232,185,77,.65); transform:scale(1.06);} 100%{box-shadow:0 0 0 4px var(--gold), 0 0 26px rgba(232,185,77,.4); transform:scale(1);}}
+
+.result-label{font-family:'Space Mono',monospace; letter-spacing:.15em; text-transform:uppercase; font-size:13px; color:rgba(245,241,232,.5); min-height:20px;}
+.result-label.show{color:var(--gold);}
+
+.confetti{position:fixed; top:0; left:0; width:8px; height:14px; border-radius:2px; z-index:50; pointer-events:none;}
+@keyframes fall{to{transform:translateY(100vh) rotate(540deg); opacity:0;}}
+
+.pin-overlay{
+  position:fixed; inset:0; background:rgba(6,46,36,.88); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center; z-index:100;
+}
+.pin-box{
+  background:var(--court-deep); border:1px solid var(--line); border-radius:16px;
+  padding:28px 30px; width:280px; text-align:center;
+}
+.pin-box h3{font-family:'Bebas Neue'; font-size:22px; margin:0 0 4px; color:var(--orange-2);}
+.pin-box p{font-size:12px; color:rgba(245,241,232,.55); margin:0 0 16px;}
+.pin-error{color:var(--danger); font-size:12px; min-height:16px; margin-top:8px;}
+
+.toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+.hint{font-size:12px; color:rgba(245,241,232,.45); margin-top:8px;}
+.divider{height:1px; background:var(--line); margin:18px 0;}
+.logo-upload-row{display:flex; align-items:center; gap:14px;}
+.logo-preview{
+  width:64px; height:64px; border-radius:10px; border:1px dashed var(--line);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  background:rgba(245,241,232,.04); flex-shrink:0; font-size:10px; color:rgba(245,241,232,.4); text-align:center;
+}
+.logo-preview img{width:100%; height:100%; object-fit:cover;}
+.top-actions{display:flex; gap:8px;}
+.footer-credit{text-align:center; font-size:11px; color:rgba(245,241,232,.3); margin-top:30px; letter-spacing:.05em;}
+
+#printArea{position:fixed; left:-9999px; top:0; width:780px; background:#fff; color:#111; padding:36px; font-family:'Inter',sans-serif;}
+</style>
+</head>
+<body>
+<div class="table-lines"></div>
+<div id="app">
+
+  <header class="top">
+    <div id="eventLogo">🏓</div>
+    <div class="brand-text">
+      <p class="eyebrow">Undian Pool Penyisihan</p>
+      <h1 class="event-name" id="eventNameDisplay">Nama Event Belum Diisi</h1>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="peserta">Peserta</button>
+      <button class="tab-btn" data-tab="admin">Admin</button>
+    </nav>
+  </header>
+  <div id="connBadge" style="text-align:right; font-size:11px; color:rgba(245,241,232,.45); margin:-12px 4px 14px;">🔄 Menghubungkan ke server...</div>
+
+  <!-- ================= PESERTA PANEL ================= -->
+  <section class="panel active" id="panel-peserta">
+    <div class="card draw-wrap">
+      <h2>Undian Pool Anda</h2>
+      <p class="hint" style="margin:-4px 0 16px;">Undian hanya berlaku untuk peserta yang sudah terdaftar. Gunakan nama &amp; kode peserta yang diberikan panitia saat pendaftaran — kode ini membuktikan Anda hanya bisa mengundi untuk diri sendiri.</p>
+      <div class="field-row" style="justify-content:center;">
+        <div class="field" style="max-width:260px;">
+          <label for="pesertaName">Nama Peserta</label>
+          <input type="text" id="pesertaName" list="nameList" placeholder="Ketik nama Anda...">
+          <datalist id="nameList"></datalist>
+        </div>
+        <div class="field" style="max-width:140px;">
+          <label for="pesertaCode">Kode Peserta</label>
+          <input type="text" id="pesertaCode" inputmode="numeric" maxlength="4" placeholder="4 digit">
+        </div>
+      </div>
+      <div class="stage">
+        <div class="flap-stage">
+          <div class="flap-card" id="flapCard"><span id="flapLetter">?</span></div>
+        </div>
+        <div class="result-label" id="resultLabel">Masukkan nama &amp; kode peserta Anda</div>
+        <button class="btn" id="drawBtn" style="font-family:'Bebas Neue'; font-size:20px; letter-spacing:.05em; padding:14px 40px;">KLIK UNDIAN 🎲</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Papan Hasil Pool <span class="num" id="totalCountPeserta">0 peserta</span></h2>
+      <div class="pool-grid" id="poolGridPeserta"></div>
+    </div>
+  </section>
+
+  <!-- ================= ADMIN PANEL ================= -->
+  <section class="panel" id="panel-admin">
+
+    <div class="card">
+      <h2>Identitas Event</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Nama Event</label>
+          <input type="text" id="eventNameInput" placeholder="Contoh: Turnamen Tenis Meja Tarjun Cup 2026">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="logo-upload-row">
+        <div class="logo-preview" id="logoPreview">Logo</div>
+        <div>
+          <input type="file" id="logoUpload" accept="image/*" style="max-width:260px;">
+          <p class="hint">Format PNG/JPG, otomatis tersimpan di perangkat ini.</p>
+        </div>
+        <button class="btn secondary small" id="removeLogoBtn">Hapus Logo</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tambah Peserta Manual</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Nama Peserta</label>
+          <input type="text" id="adminNameInput" placeholder="Nama peserta">
+        </div>
+        <div class="field" style="max-width:190px;">
+          <label>Pool</label>
+          <select id="adminPoolInput">
+            <option value="">Belum diundi (undi sendiri)</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+            <option>E</option><option>F</option><option>G</option><option>H</option>
+          </select>
+        </div>
+        <button class="btn" id="adminAddBtn">Tambah</button>
+      </div>
+      <p class="hint">Setiap peserta baru otomatis mendapat Kode Peserta 4 digit. Bagikan kode ini secara pribadi — kode inilah yang membuat peserta hanya bisa mengundi untuk dirinya sendiri.</p>
+      <div class="divider"></div>
+      <label style="font-size:12px; color:rgba(245,241,232,.65); font-weight:600; display:block; margin-bottom:6px;">Tambah Cepat (satu nama per baris, opsional: Nama;Pool)</label>
+      <textarea id="bulkInput" placeholder="Andi&#10;Budi;C&#10;Citra"></textarea>
+      <div style="margin-top:8px;"><button class="btn secondary" id="bulkAddBtn">Tambahkan Semua</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Daftar Peserta <span class="num" id="totalCountAdmin">0 peserta</span></h2>
+      <div class="toolbar">
+        <select id="filterPool" style="max-width:160px;">
+          <option value="">Semua Pool</option>
+          <option>A</option><option>B</option><option>C</option><option>D</option>
+          <option>E</option><option>F</option><option>G</option><option>H</option>
+        </select>
+        <button class="btn secondary small" id="exportPdfBtn">📄 Simpan PDF Hasil</button>
+        <button class="btn secondary small" id="exportCodesBtn">🎫 Cetak Kode Peserta</button>
+        <button class="btn danger small" id="resetBtn">Hapus Semua Data</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="roster">
+          <thead><tr><th>#</th><th>Nama</th><th>Kode</th><th>Pool</th><th>Sumber</th><th>Aksi</th></tr></thead>
+          <tbody id="rosterBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ringkasan Pool</h2>
+      <div class="pool-grid" id="poolGridAdmin"></div>
+    </div>
+  </section>
+
+  <p class="footer-credit">Made By : Suryana</p>
+</div>
+
+<div id="pinOverlay" class="pin-overlay" style="display:none;">
+  <div class="pin-box">
+    <h3>Akses Admin</h3>
+    <p>Masukkan PIN untuk mengelola undian</p>
+    <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" maxlength="8">
+    <div class="pin-error" id="pinError"></div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn secondary" id="pinCancel" style="flex:1;">Batal</button>
+      <button class="btn" id="pinSubmit" style="flex:1;">Masuk</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<div id="loadOverlay" class="pin-overlay" style="display:flex;">
+  <div class="pin-box">
+    <h3>Menyiapkan Data</h3>
+    <p id="loadOverlayText">Menghubungkan ke server undian...</p>
+  </div>
+</div>
+
+<script>
+const POOLS = ['A','B','C','D','E','F','G','H'];
+const ADMIN_PIN = '159753';
+const FIREBASE_URL = 'https://undian-tenis-meja-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+let state = { event:{ name:'', logo:'' }, participants:[] };
+let isAdmin = sessionStorage.getItem('ttq_admin_ok') === '1';
+let isDrawing = false;
+
+function setConnBadge(status){
+  const el = document.getElementById('connBadge');
+  if(!el) return;
+  if(status==='online') el.textContent = '🟢 Tersambung ke server';
+  else if(status==='syncing') el.textContent = '🔄 Menyimpan...';
+  else el.textContent = '🔴 Terputus — periksa koneksi internet';
+}
+
+async function fbFetchAll(){
+  const [pRes, eRes] = await Promise.all([
+    fetch(`${FIREBASE_URL}/participants.json`),
+    fetch(`${FIREBASE_URL}/event.json`)
+  ]);
+  if(!pRes.ok || !eRes.ok) throw new Error('Gagal memuat data dari server');
+  const pData = await pRes.json();
+  const eData = await eRes.json();
+  const participants = pData ? Object.entries(pData).map(([id,v])=>({ id, ...v })) : [];
+  const event = eData || { name:'', logo:'' };
+  return { event, participants };
+}
+async function fbPutParticipant(entry){
+  const { id, ...rest } = entry;
+  const res = await fetch(`${FIREBASE_URL}/participants/${id}.json`, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rest)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function fbPatchParticipant(id, patch){
+  const res = await fetch(`${FIREBASE_URL}/participants/${id}.json`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function fbDeleteParticipant(id){
+  const res = await fetch(`${FIREBASE_URL}/participants/${id}.json`, { method:'DELETE' });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function fbDeleteAllParticipants(){
+  const res = await fetch(`${FIREBASE_URL}/participants.json`, { method:'DELETE' });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function fbPutEvent(event){
+  const res = await fetch(`${FIREBASE_URL}/event.json`, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(event)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+
+async function initApp(){
+  setConnBadge('syncing');
+  try{
+    state = await fbFetchAll();
+    setConnBadge('online');
+  }catch(e){
+    setConnBadge('offline');
+    document.getElementById('loadOverlayText').textContent = 'Gagal menyambung ke server. Periksa koneksi internet lalu muat ulang halaman.';
+    return;
+  }
+  document.getElementById('loadOverlay').style.display = 'none';
+  renderHeader();
+  renderPeserta();
+  startPolling();
+}
+
+function startPolling(){
+  setInterval(async ()=>{
+    if(isDrawing) return;
+    try{
+      state = await fbFetchAll();
+      setConnBadge('online');
+      const adminActive = document.getElementById('panel-admin').classList.contains('active');
+      if(adminActive){ renderAdmin(); } else { renderPeserta(); }
+    }catch(e){
+      setConnBadge('offline');
+    }
+  }, 4000);
+}
+
+/* ---------- TAB SWITCHING ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const tab = btn.dataset.tab;
+    if(tab === 'admin' && !isAdmin){ openPinOverlay(); return; }
+    activateTab(tab);
+  });
+});
+function activateTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('panel-peserta').classList.toggle('active', tab==='peserta');
+  document.getElementById('panel-admin').classList.toggle('active', tab==='admin');
+  if(tab==='admin') renderAdmin();
+  if(tab==='peserta') renderPeserta();
+}
+
+/* ---------- PIN ---------- */
+function openPinOverlay(){
+  document.getElementById('pinOverlay').style.display='flex';
+  document.getElementById('pinInput').value='';
+  document.getElementById('pinError').textContent='';
+  document.getElementById('pinInput').focus();
+}
+document.getElementById('pinCancel').addEventListener('click', ()=>{
+  document.getElementById('pinOverlay').style.display='none';
+});
+document.getElementById('pinSubmit').addEventListener('click', submitPin);
+document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') submitPin(); });
+function submitPin(){
+  const val = document.getElementById('pinInput').value.trim();
+  if(val === ADMIN_PIN){
+    isAdmin = true;
+    sessionStorage.setItem('ttq_admin_ok','1');
+    document.getElementById('pinOverlay').style.display='none';
+    activateTab('admin');
+  }else{
+    document.getElementById('pinError').textContent = 'PIN salah, coba lagi.';
+  }
+}
+
+/* ---------- EVENT HEADER ---------- */
+function renderHeader(){
+  const nameEl = document.getElementById('eventNameDisplay');
+  if(state.event.name){ nameEl.textContent = state.event.name; nameEl.classList.remove('placeholder'); }
+  else { nameEl.textContent = 'Nama Event Belum Diisi'; nameEl.classList.add('placeholder'); }
+  const logoBox = document.getElementById('eventLogo');
+  logoBox.innerHTML = state.event.logo ? `<img src="${state.event.logo}">` : '🏓';
+
+  document.getElementById('eventNameInput').value = state.event.name || '';
+  const preview = document.getElementById('logoPreview');
+  preview.innerHTML = state.event.logo ? `<img src="${state.event.logo}">` : 'Logo';
+}
+let eventSaveTimer = null;
+document.getElementById('eventNameInput').addEventListener('input', e=>{
+  state.event.name = e.target.value; renderHeader();
+  clearTimeout(eventSaveTimer);
+  setConnBadge('syncing');
+  eventSaveTimer = setTimeout(()=>{
+    fbPutEvent(state.event).then(()=>setConnBadge('online')).catch(()=>setConnBadge('offline'));
+  }, 700);
+});
+document.getElementById('logoUpload').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    state.event.logo = reader.result; renderHeader();
+    setConnBadge('syncing');
+    fbPutEvent(state.event).then(()=>setConnBadge('online')).catch(()=>setConnBadge('offline'));
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('removeLogoBtn').addEventListener('click', ()=>{
+  state.event.logo=''; renderHeader();
+  setConnBadge('syncing');
+  fbPutEvent(state.event).then(()=>setConnBadge('online')).catch(()=>setConnBadge('offline'));
+});
+
+/* ---------- POOL LOGIC ---------- */
+function poolCounts(){
+  const counts = {}; POOLS.forEach(p=>counts[p]=0);
+  state.participants.forEach(p=>{ if(counts[p.pool]!==undefined) counts[p.pool]++; });
+  return counts;
+}
+function pickBalancedPool(){
+  const counts = poolCounts();
+  const min = Math.min(...POOLS.map(p=>counts[p]));
+  const candidates = POOLS.filter(p=>counts[p]===min);
+  return candidates[Math.floor(Math.random()*candidates.length)];
+}
+function findByName(name){
+  const norm = name.trim().toLowerCase();
+  return state.participants.find(p=>p.name.trim().toLowerCase() === norm);
+}
+function genUniqueCode(){
+  const existing = new Set(state.participants.map(p=>p.code));
+  let code;
+  do{ code = String(Math.floor(1000 + Math.random()*9000)); } while(existing.has(code));
+  return code;
+}
+async function addParticipant(name, pool, source){
+  const clean = name.trim();
+  if(!clean) return null;
+  const finalPool = pool && POOLS.includes(pool) ? pool : null;
+  const entry = {
+    id: 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    name: clean,
+    code: genUniqueCode(),
+    pool: finalPool,
+    source,
+    time: new Date().toISOString(),
+    drawnAt: finalPool ? new Date().toISOString() : null
+  };
+  state.participants.push(entry);
+  setConnBadge('syncing');
+  try{
+    await fbPutParticipant(entry);
+    setConnBadge('online');
+  }catch(e){
+    setConnBadge('offline');
+    alert('Gagal menyimpan peserta ke server. Periksa koneksi internet lalu coba lagi.');
+  }
+  return entry;
+}
+function refreshNameDatalist(){
+  const list = document.getElementById('nameList');
+  if(!list) return;
+  list.innerHTML = state.participants.map(p=>`<option value="${escapeHtml(p.name)}">`).join('');
+}
+
+/* ---------- POOL GRID RENDER (shared) ---------- */
+function buildPoolGrid(container, highlightPool){
+  container.innerHTML = '';
+  const grouped = {}; POOLS.forEach(p=>grouped[p]=[]);
+  state.participants.forEach(p=>{ if(grouped[p.pool]) grouped[p.pool].push(p.name); });
+  POOLS.forEach(letter=>{
+    const div = document.createElement('div');
+    div.className = 'pool-card' + (letter===highlightPool ? ' highlight' : '');
+    const names = grouped[letter];
+    div.innerHTML = `
+      <div class="ph"><span class="pletter">${letter}</span><span class="pcount">${names.length} peserta</span></div>
+      <ul>${ names.length ? names.map(n=>`<li>${escapeHtml(n)}</li>`).join('') : '<li class="pempty">Belum ada peserta</li>' }</ul>
+    `;
+    container.appendChild(div);
+  });
+}
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- PESERTA PANEL ---------- */
+function renderPeserta(){
+  const drawn = state.participants.filter(p=>p.pool).length;
+  document.getElementById('totalCountPeserta').textContent = `${drawn} dari ${state.participants.length} peserta sudah diundi`;
+  buildPoolGrid(document.getElementById('poolGridPeserta'));
+  refreshNameDatalist();
+}
+document.getElementById('drawBtn').addEventListener('click', handleDraw);
+document.getElementById('pesertaCode').addEventListener('keydown', e=>{ if(e.key==='Enter') handleDraw(); });
+document.getElementById('pesertaName').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('pesertaCode').focus(); });
+
+function handleDraw(){
+  const nameInput = document.getElementById('pesertaName');
+  const codeInput = document.getElementById('pesertaCode');
+  const name = nameInput.value.trim();
+  const code = codeInput.value.trim();
+  const resultLabel = document.getElementById('resultLabel');
+  const drawBtn = document.getElementById('drawBtn');
+
+  if(!name || !code){
+    resultLabel.textContent = 'Isi nama dan kode peserta Anda';
+    resultLabel.classList.remove('show');
+    return;
+  }
+
+  const match = findByName(name);
+  if(!match){
+    resultLabel.textContent = 'Nama belum terdaftar. Silakan hubungi panitia untuk didaftarkan.';
+    resultLabel.classList.remove('show');
+    return;
+  }
+  if(match.code !== code){
+    resultLabel.textContent = 'Kode peserta tidak sesuai dengan nama tersebut.';
+    resultLabel.classList.remove('show');
+    return;
+  }
+
+  isDrawing = true;
+  drawBtn.disabled = true;
+
+  if(match.pool){
+    resultLabel.textContent = 'Memuat hasil undian Anda...';
+    resultLabel.classList.remove('show');
+    runFlap(match.pool, ()=>{
+      resultLabel.textContent = `${match.name.toUpperCase()} — ANDA SUDAH TERDAFTAR DI POOL ${match.pool}`;
+      resultLabel.classList.add('show');
+      drawBtn.disabled = false;
+      isDrawing = false;
+      renderPeserta();
+    }, true);
+    return;
+  }
+
+  resultLabel.textContent = 'Mengundi...';
+  resultLabel.classList.remove('show');
+  const finalPool = pickBalancedPool();
+  runFlap(finalPool, async ()=>{
+    match.pool = finalPool;
+    match.drawnAt = new Date().toISOString();
+    resultLabel.textContent = `${match.name.toUpperCase()} MASUK KE POOL ${finalPool}`;
+    resultLabel.classList.add('show');
+    launchConfetti();
+    setConnBadge('syncing');
+    try{
+      await fbPatchParticipant(match.id, { pool: match.pool, drawnAt: match.drawnAt });
+      setConnBadge('online');
+    }catch(e){
+      setConnBadge('offline');
+      resultLabel.textContent += ' (belum tersimpan ke server, periksa koneksi)';
+    }
+    drawBtn.disabled = false;
+    isDrawing = false;
+    nameInput.value = '';
+    codeInput.value = '';
+    renderPeserta();
+  }, false);
+}
+
+/* ---------- FLAP ANIMATION ---------- */
+function runFlap(targetLetter, onDone, instant){
+  const card = document.getElementById('flapCard');
+  const letterEl = document.getElementById('flapLetter');
+  card.classList.remove('flap-land');
+
+  if(instant){
+    card.classList.add('flap-out');
+    setTimeout(()=>{
+      letterEl.textContent = targetLetter;
+      card.classList.remove('flap-out'); card.classList.add('flap-in');
+      setTimeout(()=>{ card.classList.remove('flap-in'); card.classList.add('flap-land'); if(onDone) onDone(); }, 100);
+    }, 100);
+    return;
+  }
+
+  let delay = 70;
+  let elapsed = 0;
+  const totalDuration = 2000;
+
+  function tick(){
+    card.classList.add('flap-out');
+    setTimeout(()=>{
+      letterEl.textContent = POOLS[Math.floor(Math.random()*POOLS.length)];
+      card.classList.remove('flap-out'); card.classList.add('flap-in');
+      setTimeout(()=>card.classList.remove('flap-in'), 90);
+    }, 90);
+
+    elapsed += delay;
+    delay = Math.min(delay * 1.16, 260);
+
+    if(elapsed < totalDuration){
+      setTimeout(tick, delay);
+    }else{
+      setTimeout(()=>{
+        card.classList.add('flap-out');
+        setTimeout(()=>{
+          letterEl.textContent = targetLetter;
+          card.classList.remove('flap-out'); card.classList.add('flap-in');
+          setTimeout(()=>{
+            card.classList.remove('flap-in');
+            card.classList.add('flap-land');
+            if(onDone) onDone();
+          }, 100);
+        }, 90);
+      }, 200);
+    }
+  }
+  tick();
+}
+
+function launchConfetti(){
+  const colors = ['#FF7A29','#E8B94D','#146B52','#F5F1E8'];
+  for(let i=0;i<26;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    el.style.left = Math.random()*100 + 'vw';
+    el.style.top = '-20px';
+    el.style.background = colors[i % colors.length];
+    el.style.animation = `fall ${1 + Math.random()*0.8}s ease-in forwards`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 2000);
+  }
+}
+
+/* ---------- ADMIN PANEL ---------- */
+function renderAdmin(){
+  renderHeader();
+  document.getElementById('totalCountAdmin').textContent = state.participants.length + ' peserta';
+  renderRoster();
+  buildPoolGrid(document.getElementById('poolGridAdmin'));
+}
+
+function renderRoster(){
+  const filter = document.getElementById('filterPool').value;
+  const tbody = document.getElementById('rosterBody');
+  const rows = state.participants.filter(p=> !filter || p.pool===filter );
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-note">Belum ada peserta terdaftar.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((p,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${escapeHtml(p.name)}</td>
+      <td><span style="font-family:'Space Mono',monospace; letter-spacing:.05em; background:rgba(232,185,77,.15); color:var(--gold); padding:3px 9px; border-radius:6px; font-size:13px;">${p.code}</span></td>
+      <td>
+        <select data-id="${p.id}" class="poolSelect">
+          <option value="" ${!p.pool?'selected':''}>—</option>
+          ${POOLS.map(l=>`<option value="${l}" ${l===p.pool?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </td>
+      <td><span style="font-size:12px; color:rgba(245,241,232,.55);">${p.source==='undian' ? 'Undian Peserta' : 'Input Admin'}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn secondary small" data-recode="${p.id}" title="Buat ulang kode jika hilang">Kode Baru</button>
+        <button class="btn danger small" data-del="${p.id}">Hapus</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tbody.querySelectorAll('.poolSelect').forEach(sel=>{
+    sel.addEventListener('change', async e=>{
+      const id = e.target.dataset.id;
+      const p = state.participants.find(x=>x.id===id);
+      if(p){
+        p.pool = e.target.value || null;
+        p.drawnAt = p.pool ? new Date().toISOString() : null;
+        renderAdmin();
+        setConnBadge('syncing');
+        try{ await fbPatchParticipant(id, { pool: p.pool, drawnAt: p.drawnAt }); setConnBadge('online'); }
+        catch(err){ setConnBadge('offline'); alert('Gagal menyimpan perubahan ke server.'); }
+      }
+    });
+  });
+  tbody.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      const id = e.target.dataset.del;
+      if(!confirm('Hapus peserta ini dari daftar?')) return;
+      state.participants = state.participants.filter(x=>x.id!==id);
+      renderAdmin();
+      setConnBadge('syncing');
+      try{ await fbDeleteParticipant(id); setConnBadge('online'); }
+      catch(err){ setConnBadge('offline'); alert('Gagal menghapus di server.'); }
+    });
+  });
+  tbody.querySelectorAll('[data-recode]').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      const id = e.target.dataset.recode;
+      const p = state.participants.find(x=>x.id===id);
+      if(p && confirm(`Buat kode baru untuk ${p.name}? Kode lama (${p.code}) tidak berlaku lagi.`)){
+        p.code = genUniqueCode();
+        renderAdmin();
+        setConnBadge('syncing');
+        try{ await fbPatchParticipant(id, { code: p.code }); setConnBadge('online'); }
+        catch(err){ setConnBadge('offline'); alert('Gagal menyimpan kode baru ke server.'); }
+      }
+    });
+  });
+}
+document.getElementById('filterPool').addEventListener('change', renderRoster);
+
+document.getElementById('adminAddBtn').addEventListener('click', async ()=>{
+  const nameInput = document.getElementById('adminNameInput');
+  const poolInput = document.getElementById('adminPoolInput');
+  const name = nameInput.value.trim();
+  if(!name){ return; }
+  if(findByName(name)){ alert('Nama sudah terdaftar di daftar peserta.'); return; }
+  await addParticipant(name, poolInput.value, 'admin');
+  nameInput.value=''; poolInput.value='';
+  renderAdmin();
+});
+document.getElementById('adminNameInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('adminAddBtn').click();
+});
+
+document.getElementById('bulkAddBtn').addEventListener('click', async ()=>{
+  const ta = document.getElementById('bulkInput');
+  const lines = ta.value.split('\n').map(l=>l.trim()).filter(Boolean);
+  let added = 0, skipped = 0;
+  for(const line of lines){
+    const [rawName, rawPool] = line.split(';').map(s=>s ? s.trim() : s);
+    if(!rawName) continue;
+    if(findByName(rawName)){ skipped++; continue; }
+    const pool = rawPool && POOLS.includes(rawPool.toUpperCase()) ? rawPool.toUpperCase() : '';
+    await addParticipant(rawName, pool, 'admin');
+    added++;
+  }
+  ta.value='';
+  renderAdmin();
+  alert(`${added} peserta ditambahkan${skipped ? `, ${skipped} dilewati (nama duplikat)` : ''}.`);
+});
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  if(!confirm('Hapus SEMUA data peserta? Tindakan ini tidak bisa dibatalkan.')) return;
+  if(!confirm('Konfirmasi sekali lagi: benar-benar hapus semua data undian?')) return;
+  setConnBadge('syncing');
+  try{
+    await fbDeleteAllParticipants();
+    state.participants = [];
+    setConnBadge('online');
+  }catch(e){
+    setConnBadge('offline');
+    alert('Gagal menghapus data di server. Periksa koneksi internet.');
+  }
+  renderAdmin();
+});
+
+/* ---------- PDF EXPORT ---------- */
+document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
+
+function buildPrintArea(){
+  const grouped = {}; POOLS.forEach(p=>grouped[p]=[]);
+  state.participants.forEach(p=>{ if(grouped[p.pool]) grouped[p.pool].push(p.name); });
+  const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+  const logoHtml = state.event.logo ? `<img src="${state.event.logo}" style="width:56px;height:56px;object-fit:cover;border-radius:10px;">` : '';
+
+  const poolsHtml = POOLS.map(letter=>`
+    <div style="border:1px solid #ddd; border-radius:10px; padding:12px 14px; break-inside:avoid;">
+      <div style="font-family:'Bebas Neue'; font-size:22px; color:#0B4F3F; border-bottom:2px solid #FF7A29; padding-bottom:4px; margin-bottom:8px;">
+        POOL ${letter} <span style="font-family:'Inter'; font-size:11px; color:#888; font-weight:400;">(${grouped[letter].length} peserta)</span>
+      </div>
+      <ol style="margin:0; padding-left:18px; font-size:13px; color:#222; line-height:1.7;">
+        ${ grouped[letter].length ? grouped[letter].map(n=>`<li>${escapeHtml(n)}</li>`).join('') : '<li style="color:#aaa; list-style:none; margin-left:-18px;">— Belum ada peserta —</li>' }
+      </ol>
+    </div>
+  `).join('');
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="display:flex; align-items:center; gap:14px; border-bottom:3px solid #0B4F3F; padding-bottom:14px; margin-bottom:18px;">
+      ${logoHtml}
+      <div>
+        <div style="font-family:'Bebas Neue'; font-size:28px; color:#0B4F3F; line-height:1;">${escapeHtml(state.event.name || 'Nama Event')}</div>
+        <div style="font-size:12px; color:#888; margin-top:4px;">Hasil Undian Pool Babak Penyisihan Tenis Meja — Dicetak ${dateStr}</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+      ${poolsHtml}
+    </div>
+    <div style="margin-top:22px; text-align:right; font-size:10px; color:#bbb;">Dibuat dengan Sistem Undian Pool — Made By : Suryana</div>
+  `;
+}
+
+function buildPrintAreaCodes(){
+  const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+  const logoHtml = state.event.logo ? `<img src="${state.event.logo}" style="width:48px;height:48px;object-fit:cover;border-radius:8px;">` : '';
+  const cards = state.participants.map(p=>`
+    <div style="border:1.5px dashed #999; border-radius:10px; padding:12px 14px; break-inside:avoid;">
+      <div style="font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#999;">Kode Peserta</div>
+      <div style="font-family:'Bebas Neue'; font-size:15px; color:#12201C; margin:3px 0;">${escapeHtml(p.name)}</div>
+      <div style="font-family:'Space Mono'; font-size:22px; letter-spacing:.1em; color:#0B4F3F; font-weight:700;">${p.code}</div>
+    </div>
+  `).join('');
+  document.getElementById('printArea').innerHTML = `
+    <div style="display:flex; align-items:center; gap:12px; border-bottom:3px solid #0B4F3F; padding-bottom:12px; margin-bottom:16px;">
+      ${logoHtml}
+      <div>
+        <div style="font-family:'Bebas Neue'; font-size:22px; color:#0B4F3F; line-height:1;">${escapeHtml(state.event.name || 'Nama Event')}</div>
+        <div style="font-size:11px; color:#888; margin-top:3px;">Kode Peserta Undian Pool — Dicetak ${dateStr}. Gunting per kartu dan bagikan langsung ke masing-masing peserta.</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+      ${cards || '<div style="color:#999;">Belum ada peserta terdaftar.</div>'}
+    </div>
+  `;
+}
+
+async function exportCodesPdf(){
+  if(state.participants.length===0){ alert('Belum ada peserta untuk dicetak.'); return; }
+  const btn = document.getElementById('exportCodesBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Memproses...'; btn.disabled = true;
+  buildPrintAreaCodes();
+  const el = document.getElementById('printArea');
+  el.style.left = '0px'; el.style.top='-99999px'; el.style.display='block';
+  try{
+    const canvas = await html2canvas(el, { scale:2, backgroundColor:'#ffffff' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = 210, pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
+    let heightLeft = imgHeight, position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    const safeName = (state.event.name || 'Kode-Peserta').replace(/[^a-z0-9]+/gi,'-');
+    pdf.save(`Kode-Peserta-${safeName}.pdf`);
+  }catch(err){
+    alert('Gagal membuat PDF: ' + err.message);
+  }finally{
+    el.style.left='-9999px'; el.style.display='none';
+    btn.textContent = originalText; btn.disabled = false;
+  }
+}
+document.getElementById('exportCodesBtn').addEventListener('click', exportCodesPdf);
+
+async function exportPdf(){
+  if(state.participants.length===0){ alert('Belum ada peserta untuk dicetak.'); return; }
+  const btn = document.getElementById('exportPdfBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Memproses...'; btn.disabled = true;
+
+  buildPrintArea();
+  const el = document.getElementById('printArea');
+  el.style.left = '0px'; el.style.top='-99999px'; el.style.display='block';
+
+  try{
+    const canvas = await html2canvas(el, { scale:2, backgroundColor:'#ffffff' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = 210, pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    const safeName = (state.event.name || 'Undian-Pool').replace(/[^a-z0-9]+/gi,'-');
+    pdf.save(`${safeName}.pdf`);
+  }catch(err){
+    alert('Gagal membuat PDF: ' + err.message);
+  }finally{
+    el.style.left='-9999px'; el.style.display='none';
+    btn.textContent = originalText; btn.disabled = false;
+  }
+}
+
+/* ---------- INIT ---------- */
+initApp();
+</script>
+</body>
+</html>
