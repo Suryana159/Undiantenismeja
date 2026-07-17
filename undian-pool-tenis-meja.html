@@ -142,6 +142,19 @@ table.roster tr:hover td{background:rgba(245,241,232,.03);}
 }
 .empty-note{color:rgba(245,241,232,.4); font-size:13px; padding:14px 4px; text-align:center;}
 
+/* ---------- MATCH / STANDINGS ---------- */
+.score-input{width:56px; text-align:center; padding:7px 4px;}
+.vs-label{font-family:'Space Mono',monospace; font-size:11px; color:rgba(245,241,232,.4); padding:0 6px;}
+.rank-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:24px; height:24px; border-radius:50%; font-family:'Bebas Neue'; font-size:13px;
+  background:var(--court-green); color:var(--cream); border:1px solid var(--line);
+}
+.rank-badge.gold{background:var(--gold); color:var(--court-deep); border-color:var(--gold);}
+.win-tag{color:#5FD68A; font-weight:700; font-size:12px;}
+.lose-tag{color:#E88A8A; font-weight:700; font-size:12px;}
+.pending-tag{color:rgba(245,241,232,.35); font-size:12px; font-style:italic;}
+
 /* ---------- POOL STANDINGS GRID ---------- */
 .pool-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;}
 @media(max-width:820px){.pool-grid{grid-template-columns:repeat(2, 1fr);}}
@@ -273,6 +286,21 @@ table.roster tr:hover td{background:rgba(245,241,232,.03);}
       <h2>Papan Hasil Pool <span class="num" id="totalCountPeserta">0 peserta</span></h2>
       <div class="pool-grid" id="poolGridPeserta"></div>
     </div>
+
+    <div class="card">
+      <h2>Klasemen &amp; Hasil Pertandingan</h2>
+      <div class="field-row" style="margin-bottom:14px;">
+        <div class="field" style="max-width:200px;">
+          <label>Pilih Pool</label>
+          <select id="pesertaScorePool">
+            <option value="">Pilih pool...</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+            <option>E</option><option>F</option><option>G</option><option>H</option>
+          </select>
+        </div>
+      </div>
+      <div id="pesertaStandingsWrap"></div>
+    </div>
   </section>
 
   <!-- ================= ADMIN PANEL ================= -->
@@ -345,6 +373,28 @@ table.roster tr:hover td{background:rgba(245,241,232,.03);}
       <h2>Ringkasan Pool</h2>
       <div class="pool-grid" id="poolGridAdmin"></div>
     </div>
+
+    <div class="card">
+      <h2>Skor Pertandingan &amp; Klasemen</h2>
+      <p class="hint" style="margin:-4px 0 14px;">Pilih pool, lalu buat jadwal round-robin (setiap peserta bertanding melawan seluruh peserta lain di pool yang sama). Peringkat dihitung otomatis dari jumlah Menang, lalu Selisih (Menang−Kalah).</p>
+      <div class="field-row" style="margin-bottom:6px;">
+        <div class="field" style="max-width:200px;">
+          <label>Pilih Pool</label>
+          <select id="adminScorePool">
+            <option value="">Pilih pool...</option>
+            <option>A</option><option>B</option><option>C</option><option>D</option>
+            <option>E</option><option>F</option><option>G</option><option>H</option>
+          </select>
+        </div>
+        <button class="btn secondary" id="generateFixturesBtn">Buat / Perbarui Jadwal</button>
+        <button class="btn danger small" id="clearFixturesBtn">Hapus Jadwal Pool Ini</button>
+      </div>
+      <div id="adminMatchesWrap"></div>
+      <div class="divider"></div>
+      <div id="adminStandingsWrap"></div>
+      <div class="divider"></div>
+      <button class="btn secondary small" id="exportStandingsPdfBtn">📊 Cetak PDF Klasemen &amp; Skor Semua Pool</button>
+    </div>
   </section>
 
   <p class="footer-credit">Made By : Suryana</p>
@@ -377,7 +427,7 @@ const POOLS = ['A','B','C','D','E','F','G','H'];
 const ADMIN_PIN = '159753';
 const FIREBASE_URL = 'https://undian-tenis-meja-default-rtdb.asia-southeast1.firebasedatabase.app';
 
-let state = { event:{ name:'', logo:'' }, participants:[] };
+let state = { event:{ name:'', logo:'' }, participants:[], matches:[] };
 let isAdmin = sessionStorage.getItem('ttq_admin_ok') === '1';
 let isDrawing = false;
 
@@ -390,16 +440,19 @@ function setConnBadge(status){
 }
 
 async function fbFetchAll(){
-  const [pRes, eRes] = await Promise.all([
+  const [pRes, eRes, mRes] = await Promise.all([
     fetch(`${FIREBASE_URL}/participants.json`),
-    fetch(`${FIREBASE_URL}/event.json`)
+    fetch(`${FIREBASE_URL}/event.json`),
+    fetch(`${FIREBASE_URL}/matches.json`)
   ]);
-  if(!pRes.ok || !eRes.ok) throw new Error('Gagal memuat data dari server');
+  if(!pRes.ok || !eRes.ok || !mRes.ok) throw new Error('Gagal memuat data dari server');
   const pData = await pRes.json();
   const eData = await eRes.json();
+  const mData = await mRes.json();
   const participants = pData ? Object.entries(pData).map(([id,v])=>({ id, ...v })) : [];
   const event = eData || { name:'', logo:'' };
-  return { event, participants };
+  const matches = mData ? Object.entries(mData).map(([id,v])=>({ id, ...v })) : [];
+  return { event, participants, matches };
 }
 async function fbPutParticipant(entry){
   const { id, ...rest } = entry;
@@ -428,6 +481,23 @@ async function fbPutEvent(event){
   });
   if(!res.ok) throw new Error('HTTP '+res.status);
 }
+async function fbPutMatch(match){
+  const { id, ...rest } = match;
+  const res = await fetch(`${FIREBASE_URL}/matches/${id}.json`, {
+    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(rest)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function fbPatchMatch(id, patch){
+  const res = await fetch(`${FIREBASE_URL}/matches/${id}.json`, {
+    method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch)
+  });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
+async function fbDeleteMatch(id){
+  const res = await fetch(`${FIREBASE_URL}/matches/${id}.json`, { method:'DELETE' });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+}
 
 async function initApp(){
   setConnBadge('syncing');
@@ -445,9 +515,13 @@ async function initApp(){
   startPolling();
 }
 
+function isUserTypingScore(){
+  const el = document.activeElement;
+  return el && el.classList && el.classList.contains('matchScore');
+}
 function startPolling(){
   setInterval(async ()=>{
-    if(isDrawing) return;
+    if(isDrawing || isUserTypingScore()) return;
     try{
       state = await fbFetchAll();
       setConnBadge('online');
@@ -608,12 +682,208 @@ function escapeHtml(str){
   return str.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+/* ---------- MATCHES & STANDINGS ---------- */
+function makeMatchId(pool, idA, idB){
+  const sorted = [idA, idB].sort();
+  return `m_${pool}_${sorted[0]}_${sorted[1]}`;
+}
+async function generateFixtures(pool){
+  if(!pool) return;
+  const players = state.participants.filter(p=>p.pool===pool);
+  if(players.length < 2){
+    alert('Pool ini butuh minimal 2 peserta yang sudah mendapat pool untuk membuat jadwal.');
+    return;
+  }
+  const existingIds = new Set(state.matches.filter(m=>m.pool===pool).map(m=>m.id));
+  const toCreate = [];
+  for(let i=0;i<players.length;i++){
+    for(let j=i+1;j<players.length;j++){
+      const id = makeMatchId(pool, players[i].id, players[j].id);
+      if(existingIds.has(id)) continue;
+      toCreate.push({
+        id, pool,
+        p1Id: players[i].id, p1Name: players[i].name,
+        p2Id: players[j].id, p2Name: players[j].name,
+        score1: null, score2: null, winnerId: null
+      });
+    }
+  }
+  if(toCreate.length === 0){ alert('Jadwal untuk pool ini sudah lengkap.'); return; }
+  setConnBadge('syncing');
+  try{
+    for(const m of toCreate){ await fbPutMatch(m); state.matches.push(m); }
+    setConnBadge('online');
+  }catch(e){
+    setConnBadge('offline');
+    alert('Gagal menyimpan jadwal ke server.');
+  }
+}
+async function clearFixtures(pool){
+  if(!pool) return;
+  const toDelete = state.matches.filter(m=>m.pool===pool);
+  if(toDelete.length===0){ alert('Belum ada jadwal untuk pool ini.'); return; }
+  if(!confirm(`Hapus seluruh jadwal & skor Pool ${pool}? Tindakan ini tidak bisa dibatalkan.`)) return;
+  setConnBadge('syncing');
+  try{
+    for(const m of toDelete){ await fbDeleteMatch(m.id); }
+    state.matches = state.matches.filter(m=>m.pool!==pool);
+    setConnBadge('online');
+  }catch(e){
+    setConnBadge('offline');
+    alert('Gagal menghapus jadwal di server.');
+  }
+}
+function computeStandings(pool){
+  const players = state.participants.filter(p=>p.pool===pool);
+  const matches = state.matches.filter(m=>m.pool===pool);
+  const stats = {};
+  players.forEach(p=>{ stats[p.id] = { id:p.id, name:p.name, main:0, menang:0, kalah:0 }; });
+  matches.forEach(m=>{
+    if(!m.winnerId) return;
+    const loserId = m.winnerId === m.p1Id ? m.p2Id : m.p1Id;
+    if(stats[m.winnerId]){ stats[m.winnerId].menang++; stats[m.winnerId].main++; }
+    if(stats[loserId]){ stats[loserId].kalah++; stats[loserId].main++; }
+  });
+  const rows = Object.values(stats).map(s=>({ ...s, selisih: s.menang - s.kalah }));
+  rows.sort((a,b)=> b.menang - a.menang || b.selisih - a.selisih || a.name.localeCompare(b.name));
+  rows.forEach((r,i)=>{ r.rank = i+1; });
+  return rows;
+}
+function buildStandingsHtml(pool, editable){
+  const rows = computeStandings(pool);
+  if(rows.length===0){
+    return `<p class="empty-note">Belum ada peserta di Pool ${pool}.</p>`;
+  }
+  return `
+    <table class="roster">
+      <thead><tr><th>Peringkat</th><th>Nama</th><th>Main</th><th>Menang</th><th>Kalah</th><th>Selisih</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td><span class="rank-badge ${r.rank===1?'gold':''}">${r.rank}</span></td>
+            <td>${escapeHtml(r.name)}</td>
+            <td>${r.main}</td>
+            <td>${r.menang}</td>
+            <td>${r.kalah}</td>
+            <td>${r.selisih > 0 ? '+' : ''}${r.selisih}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+function buildMatchesHtml(pool, editable){
+  const matches = state.matches.filter(m=>m.pool===pool);
+  if(matches.length===0){
+    return `<p class="empty-note">Belum ada jadwal pertandingan untuk Pool ${pool}. ${editable ? 'Klik "Buat / Perbarui Jadwal".' : ''}</p>`;
+  }
+  return `
+    <table class="roster">
+      <thead><tr><th>Pertandingan</th><th style="text-align:center;">Skor</th><th>Hasil</th></tr></thead>
+      <tbody>
+        ${matches.map(m=>{
+          let resultHtml = '<span class="pending-tag">Belum ada skor</span>';
+          if(m.winnerId){
+            const winnerName = m.winnerId === m.p1Id ? m.p1Name : m.p2Name;
+            resultHtml = `<span class="win-tag">${escapeHtml(winnerName)} menang</span>`;
+          } else if(m.score1 !== null && m.score2 !== null && m.score1 === m.score2){
+            resultHtml = '<span class="pending-tag">Skor imbang, perbaiki input</span>';
+          }
+          return `
+            <tr>
+              <td>${escapeHtml(m.p1Name)} <span class="vs-label">VS</span> ${escapeHtml(m.p2Name)}</td>
+              <td style="text-align:center; white-space:nowrap;">
+                ${ editable ? `
+                  <input type="number" min="0" class="score-input matchScore" data-match="${m.id}" data-side="1" value="${m.score1 ?? ''}" placeholder="0">
+                  <span class="vs-label">–</span>
+                  <input type="number" min="0" class="score-input matchScore" data-match="${m.id}" data-side="2" value="${m.score2 ?? ''}" placeholder="0">
+                ` : `${m.score1 ?? '-'} – ${m.score2 ?? '-'}` }
+              </td>
+              <td>${resultHtml}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+async function saveMatchScore(matchId){
+  const inputs = document.querySelectorAll(`.matchScore[data-match="${matchId}"]`);
+  let score1 = null, score2 = null;
+  inputs.forEach(inp=>{
+    const val = inp.value.trim();
+    const num = val === '' ? null : Number(val);
+    if(inp.dataset.side === '1') score1 = num;
+    else score2 = num;
+  });
+  const match = state.matches.find(m=>m.id===matchId);
+  if(!match) return;
+  let winnerId = null;
+  if(score1 !== null && score2 !== null && score1 !== score2){
+    winnerId = score1 > score2 ? match.p1Id : match.p2Id;
+  }
+  match.score1 = score1; match.score2 = score2; match.winnerId = winnerId;
+  setConnBadge('syncing');
+  try{
+    await fbPatchMatch(matchId, { score1, score2, winnerId });
+    setConnBadge('online');
+  }catch(e){
+    setConnBadge('offline');
+  }
+  renderAdminScoreSection();
+}
+function renderAdminScoreSection(){
+  const pool = document.getElementById('adminScorePool').value;
+  const matchesWrap = document.getElementById('adminMatchesWrap');
+  const standingsWrap = document.getElementById('adminStandingsWrap');
+  if(!pool){
+    matchesWrap.innerHTML = '';
+    standingsWrap.innerHTML = '<p class="empty-note">Pilih pool untuk melihat jadwal &amp; klasemen.</p>';
+    return;
+  }
+  matchesWrap.innerHTML = `<h3 style="font-family:'Bebas Neue'; font-size:16px; color:rgba(245,241,232,.7); margin:0 0 8px;">Jadwal Pool ${pool}</h3>${buildMatchesHtml(pool, true)}`;
+  standingsWrap.innerHTML = `<h3 style="font-family:'Bebas Neue'; font-size:16px; color:rgba(245,241,232,.7); margin:0 0 8px;">Klasemen Pool ${pool}</h3>${buildStandingsHtml(pool, true)}`;
+  matchesWrap.querySelectorAll('.matchScore').forEach(inp=>{
+    inp.addEventListener('change', ()=> saveMatchScore(inp.dataset.match));
+  });
+}
+function renderPesertaScoreSection(){
+  const pool = document.getElementById('pesertaScorePool').value;
+  const wrap = document.getElementById('pesertaStandingsWrap');
+  if(!pool){
+    wrap.innerHTML = '<p class="empty-note">Pilih pool untuk melihat klasemen &amp; hasil pertandingan.</p>';
+    return;
+  }
+  wrap.innerHTML = `
+    <h3 style="font-family:'Bebas Neue'; font-size:16px; color:rgba(245,241,232,.7); margin:0 0 8px;">Klasemen Pool ${pool}</h3>
+    ${buildStandingsHtml(pool, false)}
+    <div style="height:14px;"></div>
+    <h3 style="font-family:'Bebas Neue'; font-size:16px; color:rgba(245,241,232,.7); margin:0 0 8px;">Hasil Pertandingan Pool ${pool}</h3>
+    ${buildMatchesHtml(pool, false)}
+  `;
+}
+document.getElementById('adminScorePool').addEventListener('change', renderAdminScoreSection);
+document.getElementById('pesertaScorePool').addEventListener('change', renderPesertaScoreSection);
+document.getElementById('generateFixturesBtn').addEventListener('click', async ()=>{
+  const pool = document.getElementById('adminScorePool').value;
+  if(!pool){ alert('Pilih pool terlebih dahulu.'); return; }
+  await generateFixtures(pool);
+  renderAdminScoreSection();
+});
+document.getElementById('clearFixturesBtn').addEventListener('click', async ()=>{
+  const pool = document.getElementById('adminScorePool').value;
+  if(!pool){ alert('Pilih pool terlebih dahulu.'); return; }
+  await clearFixtures(pool);
+  renderAdminScoreSection();
+});
+
 /* ---------- PESERTA PANEL ---------- */
 function renderPeserta(){
   const drawn = state.participants.filter(p=>p.pool).length;
   document.getElementById('totalCountPeserta').textContent = `${drawn} dari ${state.participants.length} peserta sudah diundi`;
   buildPoolGrid(document.getElementById('poolGridPeserta'));
   refreshNameDatalist();
+  renderPesertaScoreSection();
 }
 document.getElementById('drawBtn').addEventListener('click', handleDraw);
 document.getElementById('pesertaCode').addEventListener('keydown', e=>{ if(e.key==='Enter') handleDraw(); });
@@ -757,6 +1027,7 @@ function renderAdmin(){
   document.getElementById('totalCountAdmin').textContent = state.participants.length + ' peserta';
   renderRoster();
   buildPoolGrid(document.getElementById('poolGridAdmin'));
+  renderAdminScoreSection();
 }
 
 function renderRoster(){
@@ -1005,6 +1276,127 @@ async function exportPdf(){
     btn.textContent = originalText; btn.disabled = false;
   }
 }
+
+function buildPrintAreaStandings(){
+  const dateStr = new Date().toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+  const logoHtml = state.event.logo ? `<img src="${state.event.logo}" style="width:52px;height:52px;object-fit:cover;border-radius:10px;">` : '';
+
+  const poolsWithPlayers = POOLS.filter(p => state.participants.some(x=>x.pool===p));
+
+  const poolBlocks = (poolsWithPlayers.length ? poolsWithPlayers : POOLS).map(pool=>{
+    const rows = computeStandings(pool);
+    const matches = state.matches.filter(m=>m.pool===pool);
+
+    const standingsRows = rows.length ? rows.map(r=>`
+      <tr>
+        <td style="text-align:center; font-weight:700;">${r.rank}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td style="text-align:center;">${r.main}</td>
+        <td style="text-align:center;">${r.menang}</td>
+        <td style="text-align:center;">${r.kalah}</td>
+        <td style="text-align:center;">${r.selisih > 0 ? '+' : ''}${r.selisih}</td>
+      </tr>
+    `).join('') : `<tr><td colspan="6" style="text-align:center; color:#aaa; padding:8px;">Belum ada peserta</td></tr>`;
+
+    const matchRows = matches.length ? matches.map(m=>{
+      let hasil = '<span style="color:#aaa;">Belum ada skor</span>';
+      if(m.winnerId){
+        const winnerName = m.winnerId === m.p1Id ? m.p1Name : m.p2Name;
+        hasil = `<span style="color:#0B4F3F; font-weight:700;">${escapeHtml(winnerName)}</span>`;
+      }
+      return `
+        <tr>
+          <td>${escapeHtml(m.p1Name)} vs ${escapeHtml(m.p2Name)}</td>
+          <td style="text-align:center;">${m.score1 ?? '-'} – ${m.score2 ?? '-'}</td>
+          <td>${hasil}</td>
+        </tr>
+      `;
+    }).join('') : `<tr><td colspan="3" style="text-align:center; color:#aaa; padding:8px;">Belum ada jadwal pertandingan</td></tr>`;
+
+    return `
+      <div style="break-inside:avoid; margin-bottom:22px; border:1px solid #ddd; border-radius:10px; padding:14px 16px;">
+        <div style="font-family:'Bebas Neue'; font-size:22px; color:#0B4F3F; border-bottom:2px solid #FF7A29; padding-bottom:5px; margin-bottom:10px;">POOL ${pool}</div>
+        <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Klasemen</div>
+        <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:12px;">
+          <thead>
+            <tr style="background:#f2f2f2;">
+              <th style="padding:6px; text-align:center;">Peringkat</th>
+              <th style="padding:6px; text-align:left;">Nama</th>
+              <th style="padding:6px; text-align:center;">Main</th>
+              <th style="padding:6px; text-align:center;">Menang</th>
+              <th style="padding:6px; text-align:center;">Kalah</th>
+              <th style="padding:6px; text-align:center;">Selisih</th>
+            </tr>
+          </thead>
+          <tbody>${standingsRows}</tbody>
+        </table>
+        <div style="font-size:11px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">Hasil Pertandingan</div>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr style="background:#f2f2f2;">
+              <th style="padding:6px; text-align:left;">Pertandingan</th>
+              <th style="padding:6px; text-align:center;">Skor</th>
+              <th style="padding:6px; text-align:left;">Pemenang</th>
+            </tr>
+          </thead>
+          <tbody>${matchRows}</tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="display:flex; align-items:center; gap:14px; border-bottom:3px solid #0B4F3F; padding-bottom:14px; margin-bottom:18px;">
+      ${logoHtml}
+      <div>
+        <div style="font-family:'Bebas Neue'; font-size:26px; color:#0B4F3F; line-height:1;">${escapeHtml(state.event.name || 'Nama Event')}</div>
+        <div style="font-size:12px; color:#888; margin-top:4px;">Klasemen &amp; Hasil Pertandingan Seluruh Pool — Dicetak ${dateStr}</div>
+      </div>
+    </div>
+    ${poolBlocks}
+    <div style="margin-top:10px; text-align:right; font-size:10px; color:#bbb;">Dibuat dengan Sistem Undian Pool — Made By : Suryana</div>
+  `;
+}
+
+async function exportStandingsPdf(){
+  if(state.participants.length===0){ alert('Belum ada peserta untuk dicetak.'); return; }
+  const btn = document.getElementById('exportStandingsPdfBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Memproses...'; btn.disabled = true;
+
+  buildPrintAreaStandings();
+  const el = document.getElementById('printArea');
+  el.style.left = '0px'; el.style.top='-99999px'; el.style.display='block';
+
+  try{
+    const canvas = await html2canvas(el, { scale:2, backgroundColor:'#ffffff' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageWidth = 210, pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    const safeName = (state.event.name || 'Klasemen-Pool').replace(/[^a-z0-9]+/gi,'-');
+    pdf.save(`Klasemen-${safeName}.pdf`);
+  }catch(err){
+    alert('Gagal membuat PDF: ' + err.message);
+  }finally{
+    el.style.left='-9999px'; el.style.display='none';
+    btn.textContent = originalText; btn.disabled = false;
+  }
+}
+document.getElementById('exportStandingsPdfBtn').addEventListener('click', exportStandingsPdf);
+
 
 /* ---------- INIT ---------- */
 initApp();
