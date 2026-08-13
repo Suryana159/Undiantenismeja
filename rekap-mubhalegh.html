@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Rekap Mubhalegh &amp; Mubhaleghot — Daerah Kotabaru</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --emerald-950:#0A2E24;
+    --emerald-900:#0E3D30;
+    --emerald-700:#14543F;
+    --emerald-600:#1D6E52;
+    --emerald-100:#E4EFE9;
+    --gold-600:#A87C25;
+    --gold-500:#C89B3C;
+    --gold-300:#E4C878;
+    --gold-100:#F6ECD2;
+    --ivory:#FAF7EF;
+    --paper:#FFFFFF;
+    --ink:#20261F;
+    --ink-soft:#54604F;
+    --sage:#7C9686;
+    --line:#DDD5C0;
+    --danger:#A8432B;
+    --danger-bg:#FBEAE4;
+    --radius:14px;
+    --shadow:0 8px 28px -12px rgba(14,61,48,0.28);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% 8%, rgba(200,155,60,0.08), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(14,61,48,0.07), transparent 45%),
+      var(--ivory);
+    color:var(--ink);
+    font-family:'Plus Jakarta Sans', system-ui, sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .display{ font-family:'Amiri', 'Plus Jakarta Sans', serif; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  /* ---------- Geometric star signature ---------- */
+  .rosette{ display:inline-block; width:1em; height:1em; vertical-align:-0.15em; }
+
+  /* ---------- Letterhead ---------- */
+  .letterhead{
+    background:
+      linear-gradient(180deg, var(--emerald-900), var(--emerald-950));
+    color:var(--gold-100);
+    position:relative;
+    padding:22px 20px 26px;
+    overflow:hidden;
+  }
+  .letterhead::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:6px;
+    background:repeating-linear-gradient(135deg, var(--gold-500) 0 10px, var(--gold-300) 10px 20px, var(--gold-600) 20px 30px);
+    opacity:.9;
+  }
+  .letterhead-inner{
+    max-width:1080px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .letterhead-title{ display:flex; align-items:center; gap:12px; }
+  .letterhead-title svg{ width:38px; height:38px; flex:none; }
+  .letterhead-title h1{ margin:0; font-size:19px; font-weight:700; letter-spacing:.2px; }
+  .letterhead-title p{ margin:2px 0 0; font-size:12.5px; color:var(--gold-300); letter-spacing:.5px; text-transform:uppercase; }
+  .letterhead-badge{
+    display:flex; align-items:center; gap:10px; font-size:13px;
+  }
+  .badge-pill{
+    background:rgba(228,200,120,0.14);
+    border:1px solid rgba(228,200,120,0.4);
+    color:var(--gold-100);
+    padding:6px 12px; border-radius:999px; font-weight:600; font-size:12.5px;
+  }
+  .btn-ghost-light{
+    background:transparent; border:1px solid rgba(246,236,210,0.45); color:var(--gold-100);
+    padding:7px 14px; border-radius:9px; font-size:12.5px; font-weight:600; cursor:pointer;
+    transition:.15s;
+  }
+  .btn-ghost-light:hover{ background:rgba(246,236,210,0.12); }
+
+  main{ flex:1; width:100%; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:26px 20px 60px; }
+
+  /* ---------- Login ---------- */
+  .login-shell{ min-height:calc(100vh - 0px); display:flex; align-items:center; justify-content:center; padding:32px 16px; }
+  .login-card{
+    width:100%; max-width:860px; background:var(--paper); border-radius:20px;
+    box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line);
+  }
+  .login-head{
+    background:linear-gradient(160deg, var(--emerald-900), var(--emerald-700));
+    color:var(--gold-100); padding:36px 32px 30px; position:relative; overflow:hidden;
+  }
+  .login-head::before{
+    content:""; position:absolute; inset:0;
+    background-image:radial-gradient(circle, rgba(228,200,120,0.10) 1.4px, transparent 1.4px);
+    background-size:18px 18px; opacity:.55;
+  }
+  .login-head-inner{ position:relative; z-index:1; display:flex; align-items:center; gap:16px; }
+  .login-head-inner svg{ width:52px; height:52px; flex:none; }
+  .login-head h1{ margin:0; font-size:23px; font-weight:700; }
+  .login-head p{ margin:5px 0 0; font-size:13px; color:var(--gold-300); letter-spacing:.4px; }
+  .login-body{ padding:30px 32px 34px; }
+  .role-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px; }
+  @media (max-width:620px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{
+    border:1.5px solid var(--line); border-radius:var(--radius); padding:20px 18px;
+    background:var(--ivory); cursor:pointer; text-align:left; transition:.15s;
+  }
+  .role-card:hover{ border-color:var(--gold-500); box-shadow:var(--shadow); transform:translateY(-1px); }
+  .role-card .icon{
+    width:40px; height:40px; border-radius:10px; background:var(--emerald-900); color:var(--gold-300);
+    display:flex; align-items:center; justify-content:center; margin-bottom:12px;
+  }
+  .role-card h3{ margin:0 0 4px; font-size:15.5px; color:var(--emerald-900); }
+  .role-card p{ margin:0; font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+
+  .panel-box{ margin-top:22px; border:1.5px dashed var(--line); border-radius:var(--radius); padding:20px; background:#FCFBF6; }
+  .panel-box h4{ margin:0 0 12px; font-size:14px; color:var(--emerald-900); }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
+  select, input[type=password], input[type=text], input[type=url]{
+    width:100%; padding:10px 12px; border-radius:9px; border:1.4px solid var(--line);
+    background:var(--paper); font-size:13.5px; color:var(--ink); font-family:inherit;
+  }
+  select:focus, input:focus{ outline:none; border-color:var(--gold-500); box-shadow:0 0 0 3px rgba(200,155,60,0.15); }
+  .btn-row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+  .btn-primary{
+    background:var(--emerald-800, var(--emerald-700)); background:linear-gradient(160deg,var(--emerald-700),var(--emerald-900));
+    color:#fff; border:none; padding:10px 18px; border-radius:9px; font-weight:700; font-size:13.5px; cursor:pointer;
+    transition:.15s;
+  }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-secondary{
+    background:var(--paper); color:var(--emerald-900); border:1.4px solid var(--emerald-700);
+    padding:10px 18px; border-radius:9px; font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+  .btn-secondary:hover{ background:var(--emerald-100); }
+  .btn-gold{
+    background:linear-gradient(160deg, var(--gold-500), var(--gold-600)); color:#fff; border:none;
+    padding:10px 18px; border-radius:9px; font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+  .btn-gold:hover{ filter:brightness(1.06); }
+  .err-msg{ color:var(--danger); background:var(--danger-bg); border:1px solid #EBC5B5; padding:8px 12px; border-radius:8px; font-size:12.5px; margin-top:10px; }
+
+  /* ---------- Dashboard controls ---------- */
+  .toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .toolbar-left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .kelompok-select-inline select{ width:auto; min-width:190px; }
+  .action-btns{ display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-sm{ padding:8px 13px; font-size:12.5px; border-radius:8px; }
+
+  .banner{
+    display:flex; align-items:flex-start; gap:10px; background:var(--gold-100); border:1px solid var(--gold-300);
+    color:#6B4E14; padding:12px 14px; border-radius:12px; font-size:12.5px; margin-bottom:20px; line-height:1.5;
+  }
+
+  /* ---------- Section cards ---------- */
+  .section-grid{ display:flex; flex-direction:column; gap:18px; }
+  .section-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .section-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:15px 18px; background:linear-gradient(90deg, var(--emerald-100), transparent);
+    border-bottom:1px solid var(--line);
+  }
+  .section-title-wrap{ display:flex; align-items:center; gap:11px; }
+  .section-mark{
+    width:32px; height:32px; border-radius:9px; background:var(--emerald-900); color:var(--gold-300);
+    display:flex; align-items:center; justify-content:center; font-size:13px; flex:none;
+  }
+  .section-title-wrap h3{ margin:0; font-size:15px; color:var(--emerald-900); font-weight:700; }
+  .count-badge{
+    background:var(--emerald-900); color:var(--gold-200,#F6ECD2); font-size:11.5px; font-weight:700;
+    padding:4px 10px; border-radius:999px; min-width:26px; text-align:center;
+  }
+  .section-body{ padding:16px 18px 18px; }
+  .empty-note{ margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); font-style:italic; }
+  .row-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+  .row-item{
+    display:grid; grid-template-columns:26px 1fr 1fr 34px; gap:8px; align-items:center;
+  }
+  @media (max-width:560px){ .row-item{ grid-template-columns:20px 1fr 1fr 28px; } .row-item input{ font-size:12.5px; padding:8px 9px;} }
+  .row-no{ font-size:11.5px; color:var(--sage); font-weight:700; text-align:center; }
+  .row-remove{
+    width:30px; height:30px; border-radius:8px; border:1.4px solid var(--line); background:#fff;
+    color:var(--danger); font-size:16px; cursor:pointer; line-height:1;
+  }
+  .row-remove:hover{ background:var(--danger-bg); border-color:#EBC5B5; }
+  .add-btn{
+    background:var(--emerald-100); border:1.4px dashed var(--emerald-600); color:var(--emerald-900);
+    padding:9px 14px; border-radius:9px; font-size:12.5px; font-weight:700; cursor:pointer; width:100%;
+  }
+  .add-btn:hover{ background:#D9EAE1; }
+
+  .bottom-bar{
+    position:sticky; bottom:0; margin-top:22px; padding:14px 16px; background:var(--paper);
+    border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .updated-note{ font-size:11.5px; color:var(--ink-soft); }
+
+  /* ---------- Summary table ---------- */
+  .table-wrap{ overflow-x:auto; background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+  table.summary{ width:100%; border-collapse:collapse; font-size:13px; min-width:720px; }
+  table.summary th{
+    background:var(--emerald-900); color:var(--gold-100); text-align:left; padding:11px 14px; font-weight:700; font-size:12px;
+    text-transform:uppercase; letter-spacing:.3px;
+  }
+  table.summary td{ padding:11px 14px; border-bottom:1px solid var(--line); }
+  table.summary tr:last-child td{ border-bottom:none; }
+  table.summary tr:hover td{ background:var(--emerald-100); }
+  table.summary td.num{ text-align:center; font-weight:700; color:var(--emerald-900); }
+  .link-btn{ background:none; border:none; color:var(--gold-600); font-weight:700; cursor:pointer; font-size:12.5px; padding:0; }
+  .link-btn:hover{ text-decoration:underline; }
+  .total-row td{ background:var(--gold-100); font-weight:800; }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(14,30,24,0.55); display:flex; align-items:center; justify-content:center;
+    padding:18px; z-index:50;
+  }
+  .modal-box{
+    background:var(--paper); border-radius:16px; max-width:560px; width:100%; max-height:88vh; overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line);
+    background:linear-gradient(90deg, var(--emerald-100), transparent);
+  }
+  .modal-head h3{ margin:0; font-size:15.5px; color:var(--emerald-900); }
+  .modal-close{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft); line-height:1; }
+  .modal-body{ padding:18px 20px 22px; }
+  .pin-grid{ display:flex; flex-direction:column; gap:10px; max-height:260px; overflow-y:auto; padding-right:2px; }
+  .pin-grid .pin-row{ display:grid; grid-template-columns:1fr 130px; gap:8px; align-items:center; }
+  .pin-grid .pin-row span{ font-size:12.5px; font-weight:600; color:var(--ink); }
+
+  footer.app-footer{
+    text-align:center; padding:18px 12px 26px; font-size:11.5px; color:var(--sage); letter-spacing:.3px;
+  }
+  footer.app-footer b{ color:var(--emerald-700); }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:var(--emerald-900); color:#fff; padding:11px 18px; border-radius:999px; font-size:13px;
+    font-weight:600; box-shadow:var(--shadow); z-index:80; transition:.25s; pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================================
+   REKAP MUBHALEGH & MUBHALEGHOT — DAERAH KOTABARU
+   Single-file app. Firebase Realtime Database (REST API) + localStorage.
+   Made by Suryana
+   ========================================================================= */
+
+/* --- 1) FIREBASE SETUP -------------------------------------------------
+   Isi databaseURL di bawah ini dengan URL Firebase Realtime Database Anda
+   agar data dapat tersinkronisasi antar perangkat (admin & setiap kelompok).
+   Contoh: "https://nama-project-default-rtdb.asia-southeast1.firebasedatabase.app"
+   Jika dikosongkan, aplikasi tetap berjalan namun data hanya tersimpan
+   secara lokal di browser masing-masing perangkat (mode offline).
+------------------------------------------------------------------------- */
+const FIREBASE_CONFIG = {
+  databaseURL: "https://soal-ujian-d2f60-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+const FB_ROOT = "mubhaleghKotabaru";
+
+const KELOMPOK_LIST = [
+  { key:'tarjun',      nama:'Tarjun' },
+  { key:'serongga',    nama:'Serongga' },
+  { key:'blok_d',      nama:'Blok D' },
+  { key:'sp',          nama:'SP' },
+  { key:'sampanahan',  nama:'Sampanahan' },
+  { key:'gunung_ulin', nama:'Gunung Ulin' },
+  { key:'rampa',       nama:'Rampa' },
+  { key:'manshurin',   nama:'Manshurin' },
+  { key:'kopen',       nama:'Kopen' },
+  { key:'teluk_aru',   nama:'Teluk Aru' },
+];
+
+const SECTIONS = [
+  { key:'mubhalegh',   title:'Daftar Nama Mubhalegh', short:'Mubhalegh', ketLabel:'Alamat / Kontak', mark:'M' },
+  { key:'mubhaleghot', title:'Daftar Mubhaleghot', short:'Mubhaleghot', ketLabel:'Alamat / Kontak', mark:'M' },
+  { key:'setempat',    title:'Daftar Mubhalegh & Mubhaleghot Setempat', short:'Setempat', ketLabel:'Alamat / Kontak', mark:'S' },
+  { key:'asisten',     title:'Daftar Asisten MT/MS', short:'Asisten MT/MS', ketLabel:'Tugas (MT/MS)', mark:'A' },
+];
+
+const LS_SETTINGS = 'mkb_settings_v1';
+const LS_CACHE    = 'mkb_cache_v1';
+
+let STATE = {
+  view: 'login',          // login | dashboard
+  role: null,             // 'admin' | 'kelompok'
+  activeKelompok: null,   // key
+  adminMode: 'select',    // select | edit | summary
+  modal: null,            // null | 'settings'
+  loading: false,
+  loginError: '',
+  pendingRole: null,      // 'admin' | 'kelompok' while entering pin
+  pendingKelompok: null,
+  settings: { adminPin:'159753', groupPins:{}, updatedAt:null },
+  cache: {}               // kelompokKey -> {mubhalegh:[],mubhaleghot:[],setempat:[],asisten:[],updatedAt}
+};
+
+/* ---------------- helpers ---------------- */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function kelompokName(key){ const k=KELOMPOK_LIST.find(x=>x.key===key); return k?k.nama:key; }
+function defaultData(){ return { mubhalegh:[], mubhaleghot:[], setempat:[], asisten:[], updatedAt:null }; }
+function fmtDate(iso){
+  if(!iso) return '-';
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  }catch(e){ return '-'; }
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ---------------- persistence: localStorage ---------------- */
+function loadLocal(){
+  try{
+    const s = localStorage.getItem(LS_SETTINGS);
+    if(s) STATE.settings = Object.assign(STATE.settings, JSON.parse(s));
+  }catch(e){}
+  try{
+    const c = localStorage.getItem(LS_CACHE);
+    if(c) STATE.cache = JSON.parse(c);
+  }catch(e){}
+}
+function persistSettingsLocal(){ localStorage.setItem(LS_SETTINGS, JSON.stringify(STATE.settings)); }
+function persistCacheLocal(){ localStorage.setItem(LS_CACHE, JSON.stringify(STATE.cache)); }
+
+/* ---------------- Firebase REST helpers ---------------- */
+function fbEnabled(){ return !!FIREBASE_CONFIG.databaseURL; }
+async function fbGet(path){
+  if(!fbEnabled()) return null;
+  try{
+    const res = await fetch(`${FIREBASE_CONFIG.databaseURL}/${path}.json`);
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ console.error('fbGet error', e); return null; }
+}
+async function fbSet(path, data){
+  if(!fbEnabled()) return false;
+  try{
+    const res = await fetch(`${FIREBASE_CONFIG.databaseURL}/${path}.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)
+    });
+    return res.ok;
+  }catch(e){ console.error('fbSet error', e); return false; }
+}
+
+async function loadSettingsRemote(){
+  const remote = await fbGet(`${FB_ROOT}/settings`);
+  if(remote){
+    STATE.settings.adminPin = remote.adminPin || STATE.settings.adminPin;
+    STATE.settings.groupPins = remote.groupPins || STATE.settings.groupPins;
+    STATE.settings.updatedAt = remote.updatedAt || null;
+    persistSettingsLocal();
+  }
+}
+async function saveSettingsRemote(){
+  persistSettingsLocal();
+  if(fbEnabled()) await fbSet(`${FB_ROOT}/settings`, STATE.settings);
+}
+
+function ensureKelompokData(key){
+  if(!STATE.cache[key]) STATE.cache[key] = defaultData();
+  return STATE.cache[key];
+}
+async function loadKelompokRemote(key){
+  const remote = await fbGet(`${FB_ROOT}/data/${key}`);
+  if(remote) STATE.cache[key] = Object.assign(defaultData(), remote);
+  else ensureKelompokData(key);
+  persistCacheLocal();
+}
+async function loadAllRemote(){
+  STATE.loading = true; renderApp();
+  await Promise.all(KELOMPOK_LIST.map(k=>loadKelompokRemote(k.key)));
+  STATE.loading = false; renderApp();
+}
+async function saveKelompokData(key){
+  const d = ensureKelompokData(key);
+  d.updatedAt = new Date().toISOString();
+  persistCacheLocal();
+  let synced = true;
+  if(fbEnabled()) synced = await fbSet(`${FB_ROOT}/data/${key}`, d);
+  showToast(fbEnabled() ? (synced ? 'Data tersimpan & tersinkron ✓' : 'Tersimpan lokal (sinkron gagal)') : 'Data tersimpan di perangkat ini');
+  renderApp();
+}
+
+/* ---------------- field mutations ---------------- */
+function addRow(key, sectionKey){
+  const d = ensureKelompokData(key);
+  d[sectionKey].push({ id: uid(), nama:'', ket:'' });
+  persistCacheLocal();
+  renderApp();
+}
+function removeRow(key, sectionKey, id){
+  const d = ensureKelompokData(key);
+  d[sectionKey] = d[sectionKey].filter(x=>x.id!==id);
+  persistCacheLocal();
+  renderApp();
+}
+function updateField(key, sectionKey, id, field, value){
+  const d = ensureKelompokData(key);
+  const item = d[sectionKey].find(x=>x.id===id);
+  if(item) item[field]=value;
+  persistCacheLocal();
+}
+
+/* ---------------- auth flows ---------------- */
+function chooseRole(role){
+  STATE.pendingRole = role;
+  STATE.pendingKelompok = null;
+  STATE.loginError = '';
+  renderApp();
+}
+async function submitAdminPin(){
+  const val = document.getElementById('adminPinInput').value.trim();
+  await loadSettingsRemote();
+  if(val === STATE.settings.adminPin){
+    STATE.role='admin'; STATE.view='dashboard'; STATE.adminMode='select'; STATE.loginError='';
+    renderApp();
+  }else{
+    STATE.loginError = 'PIN admin salah. Silakan coba lagi.';
+    renderApp();
+  }
+}
+async function submitKelompokLogin(){
+  const key = document.getElementById('kelompokSelectLogin').value;
+  const pinEl = document.getElementById('kelompokPinInput');
+  const pin = pinEl ? pinEl.value.trim() : '';
+  await loadSettingsRemote();
+  const requiredPin = STATE.settings.groupPins[key] || '';
+  if(requiredPin && pin !== requiredPin){
+    STATE.loginError = 'PIN kelompok salah. Silakan hubungi admin daerah.';
+    renderApp();
+    return;
+  }
+  STATE.role='kelompok'; STATE.activeKelompok=key; STATE.view='dashboard'; STATE.loginError='';
+  await loadKelompokRemote(key);
+  renderApp();
+}
+function onKelompokSelectChange(){
+  STATE.pendingKelompok = document.getElementById('kelompokSelectLogin').value;
+  renderApp();
+}
+function logout(){
+  STATE = Object.assign(STATE, { view:'login', role:null, activeKelompok:null, adminMode:'select', modal:null, pendingRole:null, pendingKelompok:null, loginError:'' });
+  renderApp();
+}
+
+/* ---------------- admin navigation ---------------- */
+async function adminOpenKelompok(key){
+  STATE.activeKelompok = key; STATE.adminMode='edit';
+  await loadKelompokRemote(key);
+  renderApp();
+}
+async function adminOpenSummary(){
+  STATE.adminMode='summary';
+  renderApp();
+  await loadAllRemote();
+}
+function adminBackToSelect(){ STATE.adminMode='select'; STATE.activeKelompok=null; renderApp(); }
+
+/* ---------------- settings modal ---------------- */
+function openSettings(){ STATE.modal='settings'; renderApp(); }
+function closeModal(){ STATE.modal=null; renderApp(); }
+async function saveSettingsFromModal(){
+  const newPin = document.getElementById('setAdminPin').value.trim();
+  if(newPin) STATE.settings.adminPin = newPin;
+  KELOMPOK_LIST.forEach(k=>{
+    const el = document.getElementById('grouppin_'+k.key);
+    if(el) STATE.settings.groupPins[k.key] = el.value.trim();
+  });
+  STATE.settings.updatedAt = new Date().toISOString();
+  await saveSettingsRemote();
+  showToast('Pengaturan tersimpan');
+  STATE.modal=null;
+  renderApp();
+}
+
+/* ---------------- export: PDF ---------------- */
+function pdfAddLetterhead(doc, subtitle){
+  doc.setFillColor(14,61,48);
+  doc.rect(0,0,210,26,'F');
+  doc.setTextColor(246,236,210);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text('LDII KOTABARU', 14, 12);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  doc.text('Rekap Data Mubhalegh & Mubhaleghot', 14, 18);
+  doc.setFontSize(8.5); doc.setTextColor(228,200,120);
+  doc.text(subtitle, 14, 23.5);
+  doc.setTextColor(20,38,31);
+}
+function pdfAddFooter(doc){
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFontSize(8); doc.setTextColor(120,130,120);
+    doc.text('Made by Suryana', 14, 290);
+    doc.text('Dicetak: ' + new Date().toLocaleString('id-ID'), 105, 290, { align:'center' });
+    doc.text(`Hal ${i}/${pageCount}`, 196, 290, { align:'right' });
+  }
+}
+function sectionRows(d, sectionKey){
+  const items = d[sectionKey] || [];
+  const sec = SECTIONS.find(s=>s.key===sectionKey);
+  return items.map((it,idx)=>[idx+1, it.nama||'-', it.ket||'-']);
+}
+function pdfKelompokBody(doc, key, startY){
+  const d = ensureKelompokData(key);
+  let y = startY;
+  SECTIONS.forEach(sec=>{
+    if(y > 250){ doc.addPage(); pdfAddLetterhead(doc, 'Kelompok: ' + kelompokName(key)); y = 34; }
+    doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(14,61,48);
+    doc.text(sec.title, 14, y);
+    const rows = sectionRows(d, sec.key);
+    doc.autoTable({
+      startY: y+3,
+      head: [['No','Nama', sec.ketLabel]],
+      body: rows.length ? rows : [[ '-', 'Belum ada data', '-' ]],
+      theme:'grid',
+      headStyles:{ fillColor:[14,61,48], textColor:[246,236,210], fontSize:9, fontStyle:'bold' },
+      bodyStyles:{ fontSize:9, textColor:[32,38,31] },
+      columnStyles:{ 0:{ cellWidth:12, halign:'center' } },
+      margin:{ left:14, right:14 },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  });
+  return y;
+}
+function exportPDF(key){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfAddLetterhead(doc, 'Kelompok: ' + kelompokName(key));
+  const d = ensureKelompokData(key);
+  doc.setFontSize(8.5); doc.setTextColor(90,100,90);
+  doc.text('Diperbarui: ' + fmtDate(d.updatedAt), 14, 32);
+  pdfKelompokBody(doc, key, 40);
+  pdfAddFooter(doc);
+  doc.save(`Rekap_Mubhalegh_${kelompokName(key).replace(/\s+/g,'_')}.pdf`);
+}
+async function exportPDFAll(){
+  await loadAllRemote();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfAddLetterhead(doc, 'Rekap Seluruh Kelompok');
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(14,61,48);
+  doc.text('Ringkasan Seluruh Kelompok', 14, 34);
+  const rows = KELOMPOK_LIST.map(k=>{
+    const d = ensureKelompokData(k.key);
+    const c1=d.mubhalegh.length, c2=d.mubhaleghot.length, c3=d.setempat.length, c4=d.asisten.length;
+    return [k.nama, c1, c2, c3, c4, c1+c2+c3+c4];
+  });
+  const totals = rows.reduce((a,r)=>[a[0]+r[1],a[1]+r[2],a[2]+r[3],a[3]+r[4],a[4]+r[5]], [0,0,0,0,0]);
+  rows.push(['TOTAL', totals[0], totals[1], totals[2], totals[3], totals[4]]);
+  doc.autoTable({
+    startY: 39,
+    head: [['Kelompok','Mubhalegh','Mubhaleghot','Setempat','Asisten MT/MS','Total']],
+    body: rows,
+    theme:'grid',
+    headStyles:{ fillColor:[14,61,48], textColor:[246,236,210], fontSize:9, fontStyle:'bold' },
+    bodyStyles:{ fontSize:9, halign:'center' },
+    columnStyles:{ 0:{ halign:'left', fontStyle:'bold' } },
+    margin:{ left:14, right:14 },
+  });
+  KELOMPOK_LIST.forEach(k=>{
+    doc.addPage();
+    pdfAddLetterhead(doc, 'Kelompok: ' + k.nama);
+    pdfKelompokBody(doc, k.key, 34);
+  });
+  pdfAddFooter(doc);
+  doc.save('Rekap_Mubhalegh_Semua_Kelompok.pdf');
+}
+
+/* ---------------- export: Excel ---------------- */
+function sheetFromSection(d, sectionKey){
+  const sec = SECTIONS.find(s=>s.key===sectionKey);
+  const items = d[sectionKey] || [];
+  const rows = [['No','Nama', sec.ketLabel]];
+  items.forEach((it,idx)=>rows.push([idx+1, it.nama||'', it.ket||'']));
+  if(items.length===0) rows.push(['-','Belum ada data','-']);
+  rows.push([]); rows.push(['Made by Suryana']);
+  return XLSX.utils.aoa_to_sheet(rows);
+}
+function exportExcel(key){
+  const d = ensureKelompokData(key);
+  const wb = XLSX.utils.book_new();
+  SECTIONS.forEach(sec=>{
+    XLSX.utils.book_append_sheet(wb, sheetFromSection(d, sec.key), sec.short.slice(0,31));
+  });
+  wb.Props = { Author:'Suryana', Title:'Rekap Mubhalegh '+kelompokName(key) };
+  XLSX.writeFile(wb, `Rekap_Mubhalegh_${kelompokName(key).replace(/\s+/g,'_')}.xlsx`);
+}
+async function exportExcelAll(){
+  await loadAllRemote();
+  const wb = XLSX.utils.book_new();
+  const ringkasan = [['No','Kelompok','Mubhalegh','Mubhaleghot','Setempat','Asisten MT/MS','Total','Diperbarui']];
+  KELOMPOK_LIST.forEach((k,idx)=>{
+    const d = ensureKelompokData(k.key);
+    const c1=d.mubhalegh.length, c2=d.mubhaleghot.length, c3=d.setempat.length, c4=d.asisten.length;
+    ringkasan.push([idx+1, k.nama, c1, c2, c3, c4, c1+c2+c3+c4, fmtDate(d.updatedAt)]);
+  });
+  ringkasan.push([]); ringkasan.push(['Made by Suryana']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ringkasan), 'Ringkasan');
+  KELOMPOK_LIST.forEach(k=>{
+    const d = ensureKelompokData(k.key);
+    const rows = [['Kategori','No','Nama','Keterangan']];
+    SECTIONS.forEach(sec=>{
+      const items = d[sec.key] || [];
+      if(items.length===0){ rows.push([sec.short,'-','Belum ada data','-']); }
+      items.forEach((it,idx)=>rows.push([sec.short, idx+1, it.nama||'', it.ket||'']));
+    });
+    rows.push([]); rows.push(['Made by Suryana']);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), k.nama.slice(0,31));
+  });
+  wb.Props = { Author:'Suryana', Title:'Rekap Mubhalegh Seluruh Kelompok' };
+  XLSX.writeFile(wb, 'Rekap_Mubhalegh_Semua_Kelompok.xlsx');
+}
+
+/* ============================= RENDER ============================= */
+function starIconSvg(){
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g fill="currentColor">
+      <path d="M24 2 L28.5 17 L44 17 L31.5 26.5 L36 42 L24 32.5 L12 42 L16.5 26.5 L4 17 L19.5 17 Z" opacity="0.16"/>
+      <path d="M24 6 L27 18.5 L39.5 18.5 L29.5 26 L33 38.5 L24 30.5 L15 38.5 L18.5 26 L8.5 18.5 L21 18.5 Z"/>
+    </g>
+  </svg>`;
+}
+
+function renderLetterhead(){
+  const roleLabel = STATE.role==='admin' ? 'Admin Daerah' : (STATE.activeKelompok ? 'Kelompok '+kelompokName(STATE.activeKelompok) : '');
+  return `
+  <div class="letterhead">
+    <div class="letterhead-inner">
+      <div class="letterhead-title">
+        <span style="color:var(--gold-300)">${starIconSvg()}</span>
+        <div>
+          <h1>Rekap Mubhalegh &amp; Mubhaleghot</h1>
+          <p>LDII Daerah Kotabaru</p>
+        </div>
+      </div>
+      <div class="letterhead-badge">
+        ${roleLabel ? `<span class="badge-pill">${escapeHtml(roleLabel)}</span>` : ''}
+        ${STATE.role ? `<button class="btn-ghost-light" onclick="logout()">Keluar</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderLogin(){
+  const pendingRole = STATE.pendingRole;
+  let panel = '';
+  if(pendingRole==='admin'){
+    panel = `
+    <div class="panel-box">
+      <h4>Masuk sebagai Admin Daerah</h4>
+      <div class="field">
+        <label>PIN Admin</label>
+        <input type="password" id="adminPinInput" placeholder="Masukkan PIN admin" onkeydown="if(event.key==='Enter')submitAdminPin()"/>
+      </div>
+      ${STATE.loginError ? `<div class="err-msg">${escapeHtml(STATE.loginError)}</div>` : ''}
+      <div class="btn-row">
+        <button class="btn-primary" onclick="submitAdminPin()">Masuk sebagai Admin</button>
+        <button class="btn-secondary" onclick="STATE.pendingRole=null;STATE.loginError='';renderApp()">Batal</button>
+      </div>
+    </div>`;
+  } else if(pendingRole==='kelompok'){
+    const selKey = STATE.pendingKelompok || KELOMPOK_LIST[0].key;
+    const needsPin = !!(STATE.settings.groupPins && STATE.settings.groupPins[selKey]);
+    panel = `
+    <div class="panel-box">
+      <h4>Masuk sebagai Kelompok</h4>
+      <div class="field">
+        <label>Pilih Nama Kelompok</label>
+        <select id="kelompokSelectLogin" onchange="onKelompokSelectChange()">
+          ${KELOMPOK_LIST.map(k=>`<option value="${k.key}" ${k.key===selKey?'selected':''}>${escapeHtml(k.nama)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>PIN Kelompok ${needsPin ? '' : '(belum diatur oleh admin — kosongkan)'}</label>
+        <input type="password" id="kelompokPinInput" placeholder="Masukkan PIN kelompok (jika ada)" onkeydown="if(event.key==='Enter')submitKelompokLogin()"/>
+      </div>
+      ${STATE.loginError ? `<div class="err-msg">${escapeHtml(STATE.loginError)}</div>` : ''}
+      <div class="btn-row">
+        <button class="btn-primary" onclick="submitKelompokLogin()">Masuk sebagai Kelompok</button>
+        <button class="btn-secondary" onclick="STATE.pendingRole=null;STATE.loginError='';renderApp()">Batal</button>
+      </div>
+    </div>`;
+  }
+
+  return `
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="login-head">
+        <div class="login-head-inner">
+          ${starIconSvg()}
+          <div>
+            <h1>Rekap Mubhalegh &amp; Mubhaleghot</h1>
+            <p>LDII DAERAH KOTABARU — SISTEM PENDATAAN KELOMPOK</p>
+          </div>
+        </div>
+      </div>
+      <div class="login-body">
+        ${!fbEnabled() ? `<div class="banner">⚠️ Mode lokal aktif: URL Firebase belum diatur pada berkas aplikasi, sehingga data hanya tersimpan di perangkat/browser ini. Hubungi admin untuk mengaktifkan sinkronisasi antar perangkat.</div>` : ''}
+        <div class="role-grid">
+          <button class="role-card" onclick="chooseRole('admin')">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2 L21 6 V11 C21 16.5 17.5 20.7 12 22 C6.5 20.7 3 16.5 3 11 V6 L12 2Z" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 12.2 L11 14.7 L15.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3>Admin Daerah</h3>
+            <p>Melihat &amp; mengelola rekap seluruh kelompok, mengatur PIN, dan mengekspor data gabungan.</p>
+          </button>
+          <button class="role-card" onclick="chooseRole('kelompok')">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="9.5" r="2.4" stroke="currentColor" stroke-width="1.6"/><path d="M3 20 C3 16.5 5.6 14.5 8.5 14.5 C11.4 14.5 14 16.5 14 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M14.5 20 C14.5 17.3 16 15.7 18 15.7 C20 15.7 21 17.3 21 19.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </div>
+            <h3>Kelompok</h3>
+            <p>Mengisi &amp; melihat data mubhalegh, mubhaleghot, dan asisten MT/MS milik kelompok sendiri.</p>
+          </button>
+        </div>
+        ${panel}
+      </div>
+    </div>
+  </div>
+  <footer class="app-footer">Made by <b>Suryana</b></footer>`;
+}
+
+function renderSectionCard(kelompokKey, sec, editable){
+  const d = ensureKelompokData(kelompokKey);
+  const items = d[sec.key];
+  return `
+  <div class="section-card">
+    <div class="section-head">
+      <div class="section-title-wrap">
+        <span class="section-mark">${sec.mark}</span>
+        <h3>${escapeHtml(sec.title)}</h3>
+      </div>
+      <span class="count-badge">${items.length}</span>
+    </div>
+    <div class="section-body">
+      ${items.length===0 ? `<p class="empty-note">Belum ada data. Klik "+ Tambah ${escapeHtml(sec.short)}" untuk menambahkan.</p>` : ''}
+      <div class="row-list">
+        ${items.map((it,idx)=>`
+          <div class="row-item">
+            <span class="row-no">${idx+1}</span>
+            <input type="text" placeholder="Nama" value="${escapeHtml(it.nama)}"
+              oninput="updateField('${kelompokKey}','${sec.key}','${it.id}','nama',this.value)" ${editable?'':'disabled'} />
+            <input type="text" placeholder="${escapeHtml(sec.ketLabel)}" value="${escapeHtml(it.ket)}"
+              oninput="updateField('${kelompokKey}','${sec.key}','${it.id}','ket',this.value)" ${editable?'':'disabled'} />
+            ${editable? `<button class="row-remove" title="Hapus" onclick="removeRow('${kelompokKey}','${sec.key}','${it.id}')">&times;</button>` : '<span></span>'}
+          </div>`).join('')}
+      </div>
+      ${editable? `<button class="add-btn" onclick="addRow('${kelompokKey}','${sec.key}')">+ Tambah ${escapeHtml(sec.short)}</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderKelompokEditor(key, opts){
+  opts = opts || {};
+  const editable = opts.editable !== false;
+  const d = ensureKelompokData(key);
+  return `
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <span class="badge-pill" style="background:var(--emerald-100);color:var(--emerald-900);border-color:var(--line);">Kelompok: ${escapeHtml(kelompokName(key))}</span>
+      <span class="updated-note">Diperbarui: ${fmtDate(d.updatedAt)}</span>
+    </div>
+    <div class="action-btns">
+      ${opts.showBack ? `<button class="btn-secondary btn-sm" onclick="adminBackToSelect()">← Kembali</button>` : ''}
+      <button class="btn-secondary btn-sm" onclick="exportPDF('${key}')">⬇ Ekspor PDF</button>
+      <button class="btn-secondary btn-sm" onclick="exportExcel('${key}')">⬇ Ekspor Excel</button>
+    </div>
+  </div>
+  <div class="section-grid">
+    ${SECTIONS.map(sec=>renderSectionCard(key, sec, editable)).join('')}
+  </div>
+  ${editable ? `
+  <div class="bottom-bar">
+    <span class="updated-note">Perubahan disimpan ke perangkat ini secara otomatis. Klik simpan untuk sinkronisasi.</span>
+    <button class="btn-primary" onclick="saveKelompokData('${key}')">💾 Simpan Data</button>
+  </div>` : ''}`;
+}
+
+function renderAdminSelect(){
+  return `
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h2 class="display" style="margin:0;font-size:19px;color:var(--emerald-900);">Panel Admin Daerah</h2>
+    </div>
+    <div class="action-btns">
+      <button class="btn-secondary btn-sm" onclick="openSettings()">⚙ Pengaturan</button>
+      <button class="btn-gold btn-sm" onclick="adminOpenSummary()">📊 Rekap Semua Kelompok</button>
+    </div>
+  </div>
+  ${!fbEnabled() ? `<div class="banner">⚠️ URL Firebase belum diatur — data yang tampil hanya berasal dari penyimpanan lokal perangkat ini, belum tersinkronisasi dengan kelompok lain.</div>` : ''}
+  <div class="section-grid">
+    <div class="section-card">
+      <div class="section-head"><div class="section-title-wrap"><span class="section-mark">K</span><h3>Pilih Kelompok untuk Dikelola</h3></div></div>
+      <div class="section-body">
+        <div class="row-list" style="gap:10px;">
+          ${KELOMPOK_LIST.map(k=>`
+            <div class="row-item" style="grid-template-columns:1fr auto;">
+              <span style="font-weight:600;font-size:13.5px;color:var(--ink);">${escapeHtml(k.nama)}</span>
+              <button class="btn-secondary btn-sm" onclick="adminOpenKelompok('${k.key}')">Buka &amp; Kelola →</button>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAdminSummary(){
+  const rows = KELOMPOK_LIST.map(k=>{
+    const d = ensureKelompokData(k.key);
+    return { k, c1:d.mubhalegh.length, c2:d.mubhaleghot.length, c3:d.setempat.length, c4:d.asisten.length, updatedAt:d.updatedAt };
+  });
+  const totals = rows.reduce((a,r)=>({c1:a.c1+r.c1,c2:a.c2+r.c2,c3:a.c3+r.c3,c4:a.c4+r.c4}), {c1:0,c2:0,c3:0,c4:0});
+  return `
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h2 class="display" style="margin:0;font-size:19px;color:var(--emerald-900);">Rekap Seluruh Kelompok</h2>
+    </div>
+    <div class="action-btns">
+      <button class="btn-secondary btn-sm" onclick="adminBackToSelect()">← Kembali</button>
+      <button class="btn-secondary btn-sm" onclick="loadAllRemote()">⟳ Muat Ulang</button>
+      <button class="btn-secondary btn-sm" onclick="exportPDFAll()">⬇ PDF Semua</button>
+      <button class="btn-secondary btn-sm" onclick="exportExcelAll()">⬇ Excel Semua</button>
+    </div>
+  </div>
+  ${STATE.loading ? `<div class="banner">Memuat data seluruh kelompok…</div>` : ''}
+  <div class="table-wrap">
+    <table class="summary">
+      <thead><tr><th>No</th><th>Kelompok</th><th>Mubhalegh</th><th>Mubhaleghot</th><th>Setempat</th><th>Asisten MT/MS</th><th>Total</th><th>Diperbarui</th><th>Aksi</th></tr></thead>
+      <tbody>
+        ${rows.map((r,idx)=>`
+          <tr>
+            <td>${idx+1}</td>
+            <td style="font-weight:700;color:var(--emerald-900);">${escapeHtml(r.k.nama)}</td>
+            <td class="num">${r.c1}</td>
+            <td class="num">${r.c2}</td>
+            <td class="num">${r.c3}</td>
+            <td class="num">${r.c4}</td>
+            <td class="num">${r.c1+r.c2+r.c3+r.c4}</td>
+            <td style="font-size:12px;color:var(--ink-soft);">${fmtDate(r.updatedAt)}</td>
+            <td><button class="link-btn" onclick="adminOpenKelompok('${r.k.key}')">Kelola →</button></td>
+          </tr>`).join('')}
+        <tr class="total-row">
+          <td colspan="2">TOTAL DAERAH KOTABARU</td>
+          <td class="num">${totals.c1}</td>
+          <td class="num">${totals.c2}</td>
+          <td class="num">${totals.c3}</td>
+          <td class="num">${totals.c4}</td>
+          <td class="num">${totals.c1+totals.c2+totals.c3+totals.c4}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderSettingsModal(){
+  if(STATE.modal !== 'settings') return '';
+  return `
+  <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Pengaturan Admin</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Ganti PIN Admin</label>
+          <input type="password" id="setAdminPin" placeholder="Kosongkan jika tidak ingin mengubah"/>
+        </div>
+        <div class="field">
+          <label>PIN Kelompok (opsional, kosongkan agar kelompok bisa masuk tanpa PIN)</label>
+          <div class="pin-grid">
+            ${KELOMPOK_LIST.map(k=>`
+              <div class="pin-row">
+                <span>${escapeHtml(k.nama)}</span>
+                <input type="text" id="grouppin_${k.key}" placeholder="PIN" value="${escapeHtml(STATE.settings.groupPins[k.key]||'')}"/>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="saveSettingsFromModal()">Simpan Pengaturan</button>
+          <button class="btn-secondary" onclick="closeModal()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderDashboard(){
+  let body = '';
+  if(STATE.role==='admin'){
+    if(STATE.adminMode==='summary') body = renderAdminSummary();
+    else if(STATE.adminMode==='edit' && STATE.activeKelompok) body = renderKelompokEditor(STATE.activeKelompok, { editable:true, showBack:true });
+    else body = renderAdminSelect();
+  } else if(STATE.role==='kelompok'){
+    body = renderKelompokEditor(STATE.activeKelompok, { editable:true, showBack:false });
+  }
+  return `
+  ${renderLetterhead()}
+  <main><div class="wrap">${body}</div></main>
+  <footer class="app-footer">Made by <b>Suryana</b></footer>
+  ${renderSettingsModal()}`;
+}
+
+function renderApp(){
+  const app = document.getElementById('app');
+  if(STATE.view==='login'){
+    app.innerHTML = renderLogin();
+  }else{
+    app.innerHTML = renderDashboard();
+  }
+}
+
+/* ---------------- init ---------------- */
+(async function init(){
+  loadLocal();
+  if(fbEnabled()) await loadSettingsRemote();
+  renderApp();
+})();
+</script>
+</body>
+</html>
