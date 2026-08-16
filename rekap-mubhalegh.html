@@ -305,6 +305,7 @@ const SECTIONS = [
   { key:'mubhalegh',   title:'Daftar Nama Mubhalegh', short:'Mubhalegh', ketLabel:'Alamat / Kontak', mark:'M' },
   { key:'mubhaleghot', title:'Daftar Mubhaleghot', short:'Mubhaleghot', ketLabel:'Alamat / Kontak', mark:'M' },
   { key:'setempat',    title:'Daftar Mubhalegh & Mubhaleghot Setempat', short:'Setempat', ketLabel:'Alamat / Kontak', mark:'S' },
+  { key:'setempat_nonaktif', title:'Daftar Mubhalegh Setempat yang Tidak Mengajar', short:'Setempat Tidak Mengajar', ketLabel:'Alasan / Keterangan', mark:'T' },
   { key:'asisten',     title:'Daftar Asisten MT/MS', short:'Asisten MT/MS', ketLabel:'Tugas (MT/MS)', mark:'A' },
 ];
 
@@ -329,7 +330,7 @@ let STATE = {
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function kelompokName(key){ const k=KELOMPOK_LIST.find(x=>x.key===key); return k?k.nama:key; }
-function defaultData(){ return { mubhalegh:[], mubhaleghot:[], setempat:[], asisten:[], updatedAt:null }; }
+function defaultData(){ return { mubhalegh:[], mubhaleghot:[], setempat:[], setempat_nonaktif:[], asisten:[], updatedAt:null }; }
 function fmtDate(iso){
   if(!iso) return '-';
   try{
@@ -579,14 +580,16 @@ async function exportPDFAll(){
   doc.text('Ringkasan Seluruh Kelompok', 14, 34);
   const rows = KELOMPOK_LIST.map(k=>{
     const d = ensureKelompokData(k.key);
-    const c1=d.mubhalegh.length, c2=d.mubhaleghot.length, c3=d.setempat.length, c4=d.asisten.length;
-    return [k.nama, c1, c2, c3, c4, c1+c2+c3+c4];
+    const counts = SECTIONS.map(sec => (d[sec.key]||[]).length);
+    const total = counts.reduce((a,b)=>a+b,0);
+    return [k.nama, ...counts, total];
   });
-  const totals = rows.reduce((a,r)=>[a[0]+r[1],a[1]+r[2],a[2]+r[3],a[3]+r[4],a[4]+r[5]], [0,0,0,0,0]);
-  rows.push(['TOTAL', totals[0], totals[1], totals[2], totals[3], totals[4]]);
+  const nCols = SECTIONS.length;
+  const totals = rows.reduce((a,r)=>a.map((v,i)=>v + r[i+1]), new Array(nCols+1).fill(0));
+  rows.push(['TOTAL', ...totals]);
   doc.autoTable({
     startY: 39,
-    head: [['Kelompok','Mubhalegh','Mubhaleghot','Setempat','Asisten MT/MS','Total']],
+    head: [['Kelompok', ...SECTIONS.map(sec=>sec.short), 'Total']],
     body: rows,
     theme:'grid',
     headStyles:{ fillColor:[14,61,48], textColor:[246,236,210], fontSize:9, fontStyle:'bold' },
@@ -625,11 +628,12 @@ function exportExcel(key){
 async function exportExcelAll(){
   await loadAllRemote();
   const wb = XLSX.utils.book_new();
-  const ringkasan = [['No','Kelompok','Mubhalegh','Mubhaleghot','Setempat','Asisten MT/MS','Total','Diperbarui']];
+  const ringkasan = [['No','Kelompok', ...SECTIONS.map(sec=>sec.short), 'Total','Diperbarui']];
   KELOMPOK_LIST.forEach((k,idx)=>{
     const d = ensureKelompokData(k.key);
-    const c1=d.mubhalegh.length, c2=d.mubhaleghot.length, c3=d.setempat.length, c4=d.asisten.length;
-    ringkasan.push([idx+1, k.nama, c1, c2, c3, c4, c1+c2+c3+c4, fmtDate(d.updatedAt)]);
+    const counts = SECTIONS.map(sec => (d[sec.key]||[]).length);
+    const total = counts.reduce((a,b)=>a+b,0);
+    ringkasan.push([idx+1, k.nama, ...counts, total, fmtDate(d.updatedAt)]);
   });
   ringkasan.push([]); ringkasan.push(['Made by Suryana']);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ringkasan), 'Ringkasan');
@@ -843,9 +847,12 @@ function renderAdminSelect(){
 function renderAdminSummary(){
   const rows = KELOMPOK_LIST.map(k=>{
     const d = ensureKelompokData(k.key);
-    return { k, c1:d.mubhalegh.length, c2:d.mubhaleghot.length, c3:d.setempat.length, c4:d.asisten.length, updatedAt:d.updatedAt };
+    const counts = SECTIONS.map(sec => (d[sec.key]||[]).length);
+    const total = counts.reduce((a,b)=>a+b,0);
+    return { k, counts, total, updatedAt:d.updatedAt };
   });
-  const totals = rows.reduce((a,r)=>({c1:a.c1+r.c1,c2:a.c2+r.c2,c3:a.c3+r.c3,c4:a.c4+r.c4}), {c1:0,c2:0,c3:0,c4:0});
+  const totals = SECTIONS.map((sec,i)=>rows.reduce((a,r)=>a+r.counts[i],0));
+  const grandTotal = totals.reduce((a,b)=>a+b,0);
   return `
   <div class="toolbar">
     <div class="toolbar-left">
@@ -861,27 +868,21 @@ function renderAdminSummary(){
   ${STATE.loading ? `<div class="banner">Memuat data seluruh kelompok…</div>` : ''}
   <div class="table-wrap">
     <table class="summary">
-      <thead><tr><th>No</th><th>Kelompok</th><th>Mubhalegh</th><th>Mubhaleghot</th><th>Setempat</th><th>Asisten MT/MS</th><th>Total</th><th>Diperbarui</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>No</th><th>Kelompok</th>${SECTIONS.map(sec=>`<th>${escapeHtml(sec.short)}</th>`).join('')}<th>Total</th><th>Diperbarui</th><th>Aksi</th></tr></thead>
       <tbody>
         ${rows.map((r,idx)=>`
           <tr>
             <td>${idx+1}</td>
             <td style="font-weight:700;color:var(--emerald-900);">${escapeHtml(r.k.nama)}</td>
-            <td class="num">${r.c1}</td>
-            <td class="num">${r.c2}</td>
-            <td class="num">${r.c3}</td>
-            <td class="num">${r.c4}</td>
-            <td class="num">${r.c1+r.c2+r.c3+r.c4}</td>
+            ${r.counts.map(c=>`<td class="num">${c}</td>`).join('')}
+            <td class="num">${r.total}</td>
             <td style="font-size:12px;color:var(--ink-soft);">${fmtDate(r.updatedAt)}</td>
             <td><button class="link-btn" onclick="adminOpenKelompok('${r.k.key}')">Kelola →</button></td>
           </tr>`).join('')}
         <tr class="total-row">
           <td colspan="2">TOTAL DAERAH KOTABARU</td>
-          <td class="num">${totals.c1}</td>
-          <td class="num">${totals.c2}</td>
-          <td class="num">${totals.c3}</td>
-          <td class="num">${totals.c4}</td>
-          <td class="num">${totals.c1+totals.c2+totals.c3+totals.c4}</td>
+          ${totals.map(t=>`<td class="num">${t}</td>`).join('')}
+          <td class="num">${grandTotal}</td>
           <td colspan="2"></td>
         </tr>
       </tbody>
